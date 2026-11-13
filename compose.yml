@@ -1,0 +1,12 @@
+services:
+  thali:
+    build: .
+    ports: ["3000:3000"]
+    volumes: ["./data-server:/data"]
+    environment:
+      # SIGNUP=open lets anyone create an account; by default only the first user can.
+      SIGNUP: ${SIGNUP:-}
+      # Optional: turns on photo logging and the weekly review.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+    restart: unless-stopped

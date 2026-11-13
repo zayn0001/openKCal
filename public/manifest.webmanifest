@@ -1,0 +1,9 @@
+{
+  "name": "Thali",
+  "short_name": "Thali",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f6f3ea",
+  "theme_color": "#2f6b3a",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

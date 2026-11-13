@@ -1,0 +1,7 @@
+node_modules
+dist
+android
+data
+data-server
+data-dev
+.git

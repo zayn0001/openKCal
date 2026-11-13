@@ -7,7 +7,7 @@ self.addEventListener('fetch', (e) => {
     fetch(e.request)
       .then((res) => {
         const copy = res.clone()
-        caches.open('thali-v1').then((c) => c.put(e.request, copy))
+        caches.open('thally-v1').then((c) => c.put(e.request, copy))
         return res
       })
       .catch(() => caches.match(e.request)),

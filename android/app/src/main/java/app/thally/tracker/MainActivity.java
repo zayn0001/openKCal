@@ -1,4 +1,4 @@
-package app.thali.tracker;
+package app.thally.tracker;
 
 import com.getcapacitor.BridgeActivity;
 

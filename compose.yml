@@ -1,12 +1,17 @@
 services:
-  thali:
+  thally:
     build: .
     ports: ["3000:3000"]
     volumes: ["./data-server:/data"]
+    # Settings come from .env (see .env.example); all are optional.
     environment:
-      # SIGNUP=open lets anyone create an account; by default only the first user can.
       SIGNUP: ${SIGNUP:-}
-      # Optional: turns on photo logging and the weekly review.
+      TRUST_PROXY: ${TRUST_PROXY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-}
+      MIRROR_ENDPOINT: ${MIRROR_ENDPOINT:-}
+      MIRROR_BUCKET: ${MIRROR_BUCKET:-}
+      MIRROR_REGION: ${MIRROR_REGION:-}
+      MIRROR_KEY_ID: ${MIRROR_KEY_ID:-}
+      MIRROR_SECRET: ${MIRROR_SECRET:-}
     restart: unless-stopped

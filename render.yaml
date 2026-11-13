@@ -1,0 +1,39 @@
+# Thally on Render's free tier: one service running the Dockerfile, with its data kept in an
+# S3-compatible bucket (server/mirror.js), since a free service's disk is wiped on every restart.
+# Same arrangement as the openGym fork, but with a bucket of its own: the mirror copies the whole
+# bucket into the data folder, so the two apps must not share one.
+services:
+  - type: web
+    name: thally
+    runtime: docker
+    plan: free
+    region: singapore # next to the Supabase project (ap-southeast-1)
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/me
+    envVars:
+      # The port Render routes to.
+      - key: PORT
+        value: "10000"
+      # Render sits in front as a proxy: rate-limit sign-in by the visitor's address, not Render's.
+      - key: TRUST_PROXY
+        value: "1"
+      # Private instance: only the first account can be created. Set to "open" to let others sign up.
+      - key: SIGNUP
+        value: ""
+      # Storage in the same Supabase project as openGym, in a private bucket named `thally`.
+      # The keys: Storage > S3 connection > New access key. They reach every bucket in the
+      # project, so they are entered in Render and never committed.
+      - key: MIRROR_ENDPOINT
+        value: https://ismyhkcsxrswqsfzfrxe.storage.supabase.co/storage/v1/s3
+      - key: MIRROR_BUCKET
+        value: thally
+      - key: MIRROR_REGION
+        value: ap-southeast-1
+      - key: MIRROR_KEY_ID
+        sync: false
+      - key: MIRROR_SECRET
+        sync: false
+      # Optional: turns on photo logging and the weekly review.
+      - key: ANTHROPIC_API_KEY
+        sync: false

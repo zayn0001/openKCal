@@ -17,5 +17,6 @@ COPY --from=build /app/dist ./dist
 USER node
 VOLUME /data
 EXPOSE 3000
-HEALTHCHECK CMD wget -qO- http://localhost:3000/api/me || exit 1
-CMD ["node", "server/server.js"]
+HEALTHCHECK CMD wget -qO- http://localhost:$PORT/api/me || exit 1
+# mirror.js runs the server, with DATA_DIR kept in an S3 bucket when MIRROR_ENDPOINT is set.
+CMD ["node", "server/mirror.js"]

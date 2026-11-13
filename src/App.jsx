@@ -12,7 +12,7 @@ export default function App() {
   return (
     <>
       <main>
-        <h1>Thali</h1>
+        <h1>Thally</h1>
         {tab === 'Diary' && <Diary goProfile={() => setTab('Profile')} />}
         {tab === 'Foods' && <Foods />}
         {tab === 'Weight' && <Weight />}

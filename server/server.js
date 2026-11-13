@@ -1,6 +1,6 @@
-// Thali server: serves the built app and syncs one JSON state blob per user.
+// Thally server: serves the built app and syncs one JSON state blob per user.
 // Plain node:http, files on disk under DATA_DIR, no database.
-import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
+import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
@@ -76,15 +76,26 @@ function limiter(max, windowMs) {
  * @param {string} o.dataDir  where users and state live
  * @param {string} [o.distDir]  built frontend to serve, if any
  * @param {boolean} [o.openSignup]  let anyone create an account (default: only the first user)
+ * @param {boolean} [o.trustProxy]  behind a reverse proxy: rate-limit by the address it reports
  * @param {object} [o.ai]  { photo(image), review(summary) } from ai.js, when a key is configured
  */
-export async function createApp({ dataDir, distDir, openSignup = false, ai = null }) {
+export async function createApp({ dataDir, distDir, openSignup = false, trustProxy = false, ai = null }) {
   await mkdir(path.join(dataDir, 'state'), { recursive: true })
   const usersFile = path.join(dataDir, 'users.json')
   const users = await readJson(usersFile, {}) // username -> { salt, hash }
-  // ponytail: sessions live in memory, so a restart signs everyone out;
-  // persist them (hashed) if that gets annoying.
-  const sessions = new Map() // token -> { user, expires }
+  // Sessions survive restarts (hosts that sleep would otherwise sign everyone out).
+  // Only a hash of each token is stored, so the file alone cannot be used to sign in.
+  const sessionsFile = path.join(dataDir, 'sessions.json')
+  const sessions = new Map(Object.entries(await readJson(sessionsFile, {}))) // sha256(token) -> { user, expires }
+  const tokenKey = (token) => createHash('sha256').update(token).digest('hex')
+  const saveSessions = () => {
+    for (const [k, s] of sessions) if (s.expires < Date.now()) sessions.delete(k)
+    return writeJson(sessionsFile, Object.fromEntries(sessions))
+  }
+  const cookieToken = (req) => /(?:^|;\s*)sid=([a-f0-9]{64})/.exec(req.headers.cookie || '')?.[1] || ''
+  // The proxy appends the address it saw, so the last entry is the one a client cannot forge.
+  const clientIp = (req) =>
+    (trustProxy && req.headers['x-forwarded-for']?.split(',').at(-1).trim()) || req.socket.remoteAddress
   const authLimit = limiter(10, 15 * 60_000)
   const aiLimit = limiter(40, 24 * 3600_000) // per user per day: AI calls cost the server owner money
   const stateFile = (user) => path.join(dataDir, 'state', `${user}.json`)
@@ -92,15 +103,15 @@ export async function createApp({ dataDir, distDir, openSignup = false, ai = nul
   const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex')
 
   function sessionUser(req) {
-    const token = /(?:^|;\s*)sid=([a-f0-9]{64})/.exec(req.headers.cookie || '')?.[1]
-    const s = token && sessions.get(token)
+    const s = sessions.get(tokenKey(cookieToken(req)))
     if (!s || s.expires < Date.now()) return null
     return s.user
   }
 
-  function startSession(req, res, user) {
+  async function startSession(req, res, user) {
     const token = randomBytes(32).toString('hex')
-    sessions.set(token, { user, expires: Date.now() + SESSION_DAYS * 86400_000 })
+    sessions.set(tokenKey(token), { user, expires: Date.now() + SESSION_DAYS * 86400_000 })
+    await saveSessions()
     const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''
     res.setHeader('Set-Cookie', `sid=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_DAYS * 86400}${secure}`)
   }
@@ -119,32 +130,31 @@ export async function createApp({ dataDir, distDir, openSignup = false, ai = nul
     'GET /api/me': (req) => ({ user: sessionUser(req), signup: signupOpen(), ai: !!ai }),
 
     'POST /api/signup': async (req, res) => {
-      authLimit(req.socket.remoteAddress)
+      authLimit(clientIp(req))
       if (!signupOpen()) throw new HttpError(403, 'Sign-up is closed on this server')
       const { username, password } = credentials(await body(req, 10_000))
       if (users[username]) throw new HttpError(409, 'That username is taken')
       const salt = randomBytes(16).toString('hex')
       users[username] = { salt, hash: await hashPassword(password, salt) }
       await writeJson(usersFile, users)
-      startSession(req, res, username)
+      await startSession(req, res, username)
       return { user: username }
     },
 
     'POST /api/login': async (req, res) => {
-      authLimit(req.socket.remoteAddress)
+      authLimit(clientIp(req))
       const { username, password } = credentials(await body(req, 10_000))
       const u = users[username]
       // Hash even for unknown users so response time doesn't reveal who exists.
       const hash = Buffer.from(await hashPassword(password, u?.salt ?? 'no-such-user'), 'hex')
       if (!u || !timingSafeEqual(hash, Buffer.from(u.hash, 'hex'))) throw new HttpError(401, 'Wrong username or password')
-      startSession(req, res, username)
+      await startSession(req, res, username)
       return { user: username }
     },
 
     'POST /api/logout': async (req) => {
       await body(req, 100)
-      const token = /(?:^|;\s*)sid=([a-f0-9]{64})/.exec(req.headers.cookie || '')?.[1]
-      sessions.delete(token)
+      if (sessions.delete(tokenKey(cookieToken(req)))) await saveSessions()
       return { user: null }
     },
 
@@ -221,17 +231,23 @@ export async function createApp({ dataDir, distDir, openSignup = false, ai = nul
   })
 }
 
-// Run directly: node server/server.js
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-  const hasKey = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN
-  const ai = hasKey ? (await import('./ai.js')).createAi() : null
+const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+export const dataDir = () => path.resolve(process.env.DATA_DIR || path.join(root, 'data-server'))
+
+// Start from the environment. Also called by mirror.js once the data folder is in place.
+export async function main() {
+  const env = process.env
+  const ai = env.ANTHROPIC_API_KEY || env.ANTHROPIC_AUTH_TOKEN ? (await import('./ai.js')).createAi() : null
   const app = await createApp({
-    dataDir: path.resolve(process.env.DATA_DIR || path.join(root, 'data-server')),
+    dataDir: dataDir(),
     distDir: path.join(root, 'dist'),
-    openSignup: process.env.SIGNUP === 'open',
+    openSignup: env.SIGNUP === 'open',
+    trustProxy: env.TRUST_PROXY === '1',
     ai,
   })
-  const port = Number(process.env.PORT) || 3000
-  app.listen(port, () => console.log(`Thali on http://localhost:${port} (AI ${ai ? 'on' : 'off'})`))
+  const port = Number(env.PORT) || 3000
+  app.listen(port, () => console.log(`Thally on http://localhost:${port} (AI ${ai ? 'on' : 'off'})`))
 }
+
+// Run directly: node server/server.js
+if (process.argv[1] === fileURLToPath(import.meta.url)) main()

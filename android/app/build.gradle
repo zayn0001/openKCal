@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "app.thali.tracker"
+    namespace = "app.thally.tracker"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "app.thali.tracker"
+        applicationId "app.thally.tracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

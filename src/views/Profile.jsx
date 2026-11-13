@@ -10,7 +10,7 @@ function exportData() {
   const url = URL.createObjectURL(new Blob([JSON.stringify(pick(useStore.getState()))], { type: 'application/json' }))
   const a = document.createElement('a')
   a.href = url
-  a.download = `thali-${today()}.json`
+  a.download = `thally-${today()}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -25,7 +25,7 @@ async function importData(e) {
   } catch {
     data = null
   }
-  if (!useStore.getState().importState(data)) alert('That file is not a Thali export.')
+  if (!useStore.getState().importState(data)) alert('That file is not a Thally export.')
 }
 
 export default function Profile() {

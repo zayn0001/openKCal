@@ -1,5 +1,5 @@
 // Optional account sync. The app works without it; when the page is served by a
-// Thali server and you sign in, local changes are pushed and remote ones pulled.
+// Thally server and you sign in, local changes are pushed and remote ones pulled.
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { KEYS, mergeState, pick } from './lib/state'

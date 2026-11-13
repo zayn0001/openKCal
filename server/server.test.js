@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -27,7 +27,8 @@ function client(base) {
 }
 
 test('accounts, sessions and state sync', async (t) => {
-  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thali-')) })
+  const dataDir = await mkdtemp(path.join(tmpdir(), 'thally-'))
+  const app = await createApp({ dataDir })
   const base = await listen(app)
   t.after(() => app.close())
   const phone = client(base)
@@ -58,13 +59,21 @@ test('accounts, sessions and state sync', async (t) => {
   // Without a JSON content type a cross-site form post can't reach a handler.
   const form = await fetch(base + '/api/logout', { method: 'POST', body: 'x' })
   assert.equal(form.status, 415)
+  // A restart keeps people signed in: sessions are on disk, stored as hashes of the tokens.
+  const cookie = up.headers.get('set-cookie').split(';')[0]
+  const again = await createApp({ dataDir })
+  const base2 = await listen(again)
+  t.after(() => again.close())
+  assert.equal((await fetch(base2 + '/api/state', { headers: { cookie } })).status, 200)
+  assert.ok(!(await readFile(path.join(dataDir, 'sessions.json'), 'utf8')).includes(cookie.slice(4)))
+
   assert.equal((await phone('POST', '/api/logout', {})).status, 200)
   assert.equal((await phone('GET', '/api/state')).status, 401)
   assert.equal((await phone('POST', '/api/ai/photo', { image: 'AAAA' })).status, 401)
 })
 
 test('login attempts are rate limited', async (t) => {
-  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thali-')) })
+  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thally-')) })
   const base = await listen(app)
   t.after(() => app.close())
   const c = client(base)
@@ -75,7 +84,7 @@ test('login attempts are rate limited', async (t) => {
 
 test('static files: served from dist, no path traversal', async (t) => {
   const dist = path.resolve('server') // any real folder will do
-  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thali-')), distDir: dist })
+  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thally-')), distDir: dist })
   const base = await listen(app)
   t.after(() => app.close())
   assert.match(await (await fetch(base + '/ai.js')).text(), /createAi/)
@@ -103,7 +112,7 @@ test('AI endpoints call the Messages API and bound what comes back', async (t) =
   process.env.ANTHROPIC_BASE_URL = await listen(stub)
   process.env.ANTHROPIC_API_KEY = 'test-key-not-real'
   const { createAi } = await import('./ai.js')
-  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thali-')), ai: createAi() })
+  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thally-')), ai: createAi() })
   const base = await listen(app)
   t.after(() => (app.close(), stub.close()))
   const c = client(base)

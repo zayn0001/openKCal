@@ -1,7 +1,7 @@
 {
-  "name": "food-tracker",
+  "name": "thally",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -28,5 +28,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
     "zod": "^4.6.7"
-  }
+  },
+  "description": "Local-first food and weight tracker: a thali you can tally"
 }

@@ -10,6 +10,7 @@ import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { z } from 'zod'
+import { TOOLS, agentSystem, resolveProposal, searchResults } from '../src/lib/agent.js'
 import { HttpError, readJson, serialize, writeJson } from './http.js'
 import { checkUrl, safeFetch, seal, unseal } from './secure.js'
 
@@ -56,6 +57,11 @@ text with no markdown. Say what went well, the one or two changes that would mat
 food suggestion for each. Keep it under 180 words. Days with nothing logged are missing data, not fasting.
 This is general nutrition guidance, not medical advice; if the numbers suggest very low intake, say so
 kindly and suggest speaking to a professional.`
+
+const MAX_ROUNDS = 10
+const TOO_MANY = 'The model took too many steps. Try describing the meal more simply.'
+// Consent covers a fixed list of what is sent; a new kind of data means asking again.
+const CONSENT_VERSION = 2
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, Number.isFinite(v) ? v : lo))
 
@@ -192,6 +198,29 @@ function anthropicAdapter({ key, model }) {
       for await (const m of await call(() => client.models.list({ limit: 100 }))) out.push(m.id)
       return out
     },
+    // A tool loop: `run(name, input)` answers each tool call, or returns { final } to stop.
+    async agent({ system, prompt, tools, run }) {
+      const defs = tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.schema }))
+      const messages = [{ role: 'user', content: prompt }]
+      for (let round = 0; round < MAX_ROUNDS; round++) {
+        const res = await call(() =>
+          client.messages.create({ model, max_tokens: 16000, system, tools: defs, messages, ...(current && { output_config: { effort: 'medium' } }) }),
+        )
+        if (res.stop_reason === 'refusal') throw new AiError(422, 'The model declined to answer this one')
+        // The whole content goes back, thinking blocks included, as the API expects.
+        messages.push({ role: 'assistant', content: res.content })
+        const uses = res.content.filter((b) => b.type === 'tool_use')
+        if (!uses.length) return { text: res.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim() }
+        const results = []
+        for (const u of uses) {
+          const out = run(u.name, u.input)
+          if (out?.final) return out
+          results.push({ type: 'tool_result', tool_use_id: u.id, content: JSON.stringify(out) })
+        }
+        messages.push({ role: 'user', content: results })
+      }
+      throw new AiError(502, TOO_MANY)
+    },
   }
 }
 
@@ -234,6 +263,42 @@ function chatAdapter({ key, model, base, headers = {}, allowLan, label, openai }
       const data = await send(url('/models'), { headers: auth, allowLan }, label)
       return (data?.data || []).map((m) => m.id).filter(Boolean).sort()
     },
+    async agent({ system, prompt, tools, run }) {
+      const defs = tools.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.schema } }))
+      const messages = [
+        { role: 'system', content: system },
+        { role: 'user', content: prompt },
+      ]
+      for (let round = 0; round < MAX_ROUNDS; round++) {
+        const data = await send(
+          url('/chat/completions'),
+          {
+            method: 'POST',
+            headers: { ...auth, 'content-type': 'application/json' },
+            body: JSON.stringify({ model, messages, tools: defs, [openai ? 'max_completion_tokens' : 'max_tokens']: 16000 }),
+            allowLan,
+          },
+          label,
+        )
+        const msg = data?.choices?.[0]?.message
+        if (!msg) throw new AiError(502, `${label} sent no answer`)
+        messages.push(msg)
+        const calls = msg.tool_calls || []
+        if (!calls.length) return { text: String(msg.content || '').trim() }
+        for (const c of calls) {
+          let args = null
+          try {
+            args = JSON.parse(c.function?.arguments || '{}')
+          } catch {
+            /* answered below */
+          }
+          const out = args ? run(c.function?.name, args) : { error: 'The arguments were not valid JSON' }
+          if (out?.final) return out
+          messages.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(out) })
+        }
+      }
+      throw new AiError(502, TOO_MANY)
+    },
   }
 }
 
@@ -264,6 +329,39 @@ function geminiAdapter({ key, model, base }) {
   return {
     meal: async (job) => parseJsonAnswer(await run(job, true)),
     text: (job) => run(job, false).then((t) => t.trim()),
+    async agent({ system, prompt, tools, run }) {
+      const contents = [{ role: 'user', parts: [{ text: prompt }] }]
+      const declarations = tools.map((t) => ({ name: t.name, description: t.description, parameters: t.schema }))
+      for (let round = 0; round < MAX_ROUNDS; round++) {
+        const data = await send(
+          `${base}/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: system }] },
+              contents,
+              tools: [{ functionDeclarations: declarations }],
+              generationConfig: { maxOutputTokens: 16000 },
+            }),
+          },
+          label,
+        )
+        const cand = data?.candidates?.[0]
+        if (!cand?.content) throw new AiError(422, `Gemini blocked the request${data?.promptFeedback?.blockReason ? `: ${data.promptFeedback.blockReason}` : ''}`)
+        contents.push(cand.content)
+        const calls = (cand.content.parts || []).filter((p) => p.functionCall)
+        if (!calls.length) return { text: (cand.content.parts || []).map((p) => p.text || '').join('').trim() }
+        const responses = []
+        for (const p of calls) {
+          const out = run(p.functionCall.name, p.functionCall.args || {})
+          if (out?.final) return out
+          responses.push({ functionResponse: { name: p.functionCall.name, response: { result: out } } })
+        }
+        contents.push({ role: 'user', parts: responses })
+      }
+      throw new AiError(502, TOO_MANY)
+    },
     async models() {
       const data = await send(`${base}/v1beta/models?pageSize=200`, { headers }, label)
       return (data?.models || [])
@@ -301,10 +399,12 @@ export async function createAi({ dataDir, key, allowLan = () => false }) {
     return chatAdapter({ key: apiKey, model, base, headers: cfg.headers || {}, allowLan: allowLan(uid), label, openai: provider === 'openai' })
   }
 
+  const consented = (cfg, p) => cfg.consent[p]?.v >= CONSENT_VERSION
+
   async function ready(uid) {
     const cfg = await load(uid)
     if (!cfg.provider) throw new AiError(400, 'Connect an AI provider in Settings → AI first')
-    if (!cfg.consent[cfg.provider]) throw new AiError(400, 'Confirm what is sent to your AI provider in Settings → AI first')
+    if (!consented(cfg, cfg.provider)) throw new AiError(400, 'Confirm what is sent to your AI provider in Settings → AI first')
     if (!cfg.models[cfg.provider] && !PROVIDERS[cfg.provider].model) throw new AiError(400, 'Pick a model in Settings → AI first')
     return { cfg, ai: adapterFor(uid, cfg) }
   }
@@ -319,7 +419,7 @@ export async function createAi({ dataDir, key, allowLan = () => false }) {
         baseUrl: cfg.baseUrl,
         headers: cfg.headers,
         hasKey: Object.fromEntries(Object.keys(PROVIDERS).map((p) => [p, !!cfg.keys[p]])),
-        consented: !!(cfg.provider && cfg.consent[cfg.provider]),
+        consented: !!cfg.provider && consented(cfg, cfg.provider),
         providers: Object.fromEntries(Object.entries(PROVIDERS).map(([id, p]) => [id, { label: p.label, model: p.model, keyHint: p.keyHint, keyOptional: !!p.keyOptional }])),
       }
     },
@@ -341,7 +441,7 @@ export async function createAi({ dataDir, key, allowLan = () => false }) {
         if (b.headers !== undefined) cfg.headers = cleanHeaders(b.headers)
         if (typeof b.key === 'string' && b.key.trim()) cfg.keys[provider] = seal(key, b.key.trim(), aad(uid, provider))
         if (b.removeKey) delete cfg.keys[provider]
-        if (b.consent === true) cfg.consent[provider] = new Date().toISOString()
+        if (b.consent === true) cfg.consent[provider] = { at: new Date().toISOString(), v: CONSENT_VERSION }
         await writeJson(file(uid), cfg, { private: true })
       })
     },
@@ -379,6 +479,28 @@ export async function createAi({ dataDir, key, allowLan = () => false }) {
       const parsed = Meal.safeParse(out)
       if (!parsed.success) throw new AiError(502, 'The model answered in a shape Thally could not read. Try again, or try another model.')
       return { items: cleanItems(parsed.data.items) }
+    },
+
+    /**
+     * "I had two rotis and dal": the agent searches foods and proposes entries and new dishes.
+     * Returns resolveProposal()'s shape; nothing is saved here, the person confirms in the app.
+     */
+    async describe(uid, { text, time, meal, foods, catalogue }) {
+      const { ai } = await ready(uid)
+      const all = [...foods, ...catalogue]
+      const byId = new Map(all.map((f) => [f.id, f]))
+      const out = await ai.agent({
+        system: agentSystem({ time, meal }),
+        prompt: text,
+        tools: TOOLS,
+        run: (name, input) => {
+          if (name === 'search_foods') return { results: searchResults(all, input?.query) }
+          if (name === 'propose_meal') return { final: input }
+          return { error: `There is no tool called ${name}` }
+        },
+      })
+      if (!out.final) return { entries: [], dishes: [], dropped: 0, message: out.text?.slice(0, 400) || 'Nothing was proposed. Try describing the meal again.' }
+      return resolveProposal(out.final, (id) => byId.get(id), { time, meal })
     },
 
     /** week summary object -> { text } */

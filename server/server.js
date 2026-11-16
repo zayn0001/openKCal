@@ -6,6 +6,8 @@ import { rm, stat } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { rowToFood } from '../src/lib/catalogue.js'
+import { MEALS } from '../src/lib/settings.js'
 import { isState } from '../src/lib/state.js'
 import { SESSION_DAYS, createAccounts } from './accounts.js'
 import { createAi } from './ai.js'
@@ -58,6 +60,10 @@ export async function createApp({
   const hooks = await createHooks({ dataDir, key, allowLan: lanFor })
   const stateFile = (uid) => path.join(dataDir, 'state', `${uid}.json`)
   const readState = async (uid) => (await readJson(stateFile(uid), { state: null })).state
+  // The food catalogue, for the meal agent's searches. Read once, on first use.
+  let catalogue
+  const loadCatalogue = async () =>
+    (catalogue ??= readJson(path.join(root, 'src', 'foods-data.json'), []).then((rows) => rows.map(rowToFood)))
   const push = await createPush({ dataDir, readState, tickMs: pushTickMs, subject: pushSubject })
   const stateWrites = serialize()
 
@@ -372,6 +378,17 @@ export async function createApp({
       aiLimit(uid)
       return ai.photo(uid, b.image)
     },
+    // "I had two rotis and a bowl of dal": a proposal of entries and new dishes to confirm.
+    'POST /api/ai/describe': async (req, res, uid) => {
+      const b = await body(req, 20_000)
+      const text = str(b?.text, { name: 'What you ate', min: 2, max: 1000 })
+      const time = /^\d\d:\d\d$/.test(b?.time) ? b.time : '12:00'
+      const meal = MEALS.includes(b?.meal) ? b.meal : undefined
+      aiLimit(uid)
+      const state = await readState(uid)
+      return ai.describe(uid, { text, time, meal, foods: state?.foods || [], catalogue: await loadCatalogue() })
+    },
+
     'POST /api/ai/review': async (req, res, uid) => {
       const b = await body(req, 50_000)
       if (!b?.summary || typeof b.summary !== 'object') throw new HttpError(400, 'summary: object')

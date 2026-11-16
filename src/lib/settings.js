@@ -8,7 +8,7 @@ export const MODULES = {
   water: { label: 'Water', what: 'The water card in the diary.' },
   weight: { label: 'Weight', what: 'The Weight tab and the goal weight.' },
   scanner: { label: 'Barcode lookup', what: 'Scanning or typing a barcode to find packaged food (Open Food Facts).' },
-  ai: { label: 'AI', what: 'Photo logging, the weekly review, and Settings → AI.' },
+  ai: { label: 'AI', what: 'Logging meals by voice or text, photo logging, the weekly review, and Settings → AI.' },
   reminders: { label: 'Reminders', what: 'Meal reminders by notification.' },
   webhooks: { label: 'Webhooks', what: 'Settings → Integrations. Webhooks pause while this is off.' },
 }

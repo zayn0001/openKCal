@@ -14,6 +14,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev && mkdir /data && chown node:node /data
 COPY server ./server
 COPY src/lib ./src/lib
+COPY src/foods-data.json ./src/foods-data.json
 COPY --from=build /app/dist ./dist
 USER node
 VOLUME /data

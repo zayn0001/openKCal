@@ -73,7 +73,7 @@ export function AiPage() {
     <>
       <section className="card">
         <p className="muted">
-          Photo logging and the weekly review run on <strong>your own</strong> AI provider account: you bring the key, and your usage is billed to you, not to
+          Logging meals by voice or text, photo logging and the weekly review run on <strong>your own</strong> AI provider account: you bring the key, and your usage is billed to you, not to
           whoever runs this server. The key is stored encrypted on the server and never shown again.
         </p>
         <fieldset className="choice">
@@ -161,8 +161,9 @@ export function AiPage() {
         <label className="consent">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
           <span>
-            I understand that, when I use them, these go to {meta.label.split(' (')[0]}: the meal photos I take for photo logging, and for a weekly review my daily
-            totals, my targets and my weight change for those seven days. Nothing else, and never in the background.
+            I understand that, when I use them, these go to {meta.label.split(' (')[0]}: what I say or type to log a meal, with the names and nutrients of
+            my own foods and dishes it searches; the meal photos I take for photo logging; and for a weekly review my daily totals, my targets and my weight
+            change for those seven days. Nothing else, and never in the background.
           </span>
         </label>
 

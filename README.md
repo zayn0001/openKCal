@@ -32,6 +32,11 @@ integration features.
 
 **On your own AI provider** (optional)
 
+- **Tell Thally what you ate:** say it (the browser’s dictation) or type it, like “two rotis, a
+  katori of dal and a chai”. An agent searches your own foods and the catalogue, estimates grams,
+  and when a home-made dish isn’t in your list it drafts one from ingredients. You review every
+  entry and every new dish, change grams or meals, untick anything, and only then is it logged and
+  saved.
 - **Photo logging:** photograph your plate and get draft entries with estimated grams to correct.
 - **Weekly review:** a short read of your last seven days against your targets.
 - Every model call uses the provider **you** connect in Settings → AI: Anthropic (Claude), OpenAI,
@@ -163,8 +168,14 @@ for a local endpoint), use **List models** to pick a model, tick the box confirm
 
 - Keys are encrypted with the server’s `secret` (AES-256-GCM, bound to the account and provider),
   never returned to the browser, and never part of the synced data or a backup export.
-- What goes to the provider, only when you use a feature: the meal photo (shrunk in the browser);
-  for a weekly review, your daily totals, targets and weight change for those seven days.
+- What goes to the provider, only when you use a feature: what you say or type to log a meal, with
+  the names and nutrients of your foods and dishes it searches; the meal photo (shrunk in the
+  browser); for a weekly review, your daily totals, targets and weight change for those seven days.
+  Dictation is the browser’s own: Chrome sends the audio to Google to turn it into text.
+- The meal agent has two tools, searching foods and proposing the meal. It can’t write anything:
+  the server checks every food it names against the real catalogue and your list, works out new
+  dishes’ nutrients itself, and the app saves only what you confirm.
+- After an update that sends a new kind of data, the consent box must be ticked again.
 - Anthropic is called through the official SDK (default model `claude-opus-5-5`, with automatic
   fallback to another model if the first declines a review). OpenAI, Gemini and compatible
   endpoints are called over HTTPS with the key in a header, never in the URL.

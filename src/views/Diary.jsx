@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Dialog from '../Dialog'
+import DescribeMeal from '../DescribeMeal'
 import DishBuilder from '../DishBuilder'
 import FoodPicker from '../FoodPicker'
 import { per100Of, scale, sum } from '../lib/nutrition'
@@ -98,6 +99,7 @@ export default function Diary({ goSettings }) {
   const [photoTo, setPhotoTo] = useState(null) // meal the photo dialog is open for
   const [open, setOpen] = useState(null) // entry whose detail is showing
   const [dishFrom, setDishFrom] = useState(null) // meal being saved as a dish
+  const [describing, setDescribing] = useState(false)
   const { units, modules } = useSettings()
   const user = useSync((s) => s.user)
   const aiReady = modules.ai && !!user?.ai?.ready
@@ -155,6 +157,13 @@ export default function Diary({ goSettings }) {
           </details>
         )}
       </section>
+
+      {aiReady && (
+        <button type="button" className="card describe" onClick={() => setDescribing(true)}>
+          <strong>🎤 Tell Thally what you ate</strong>
+          <small>Say or type it, like “two rotis and a bowl of dal”. You check everything before it’s logged.</small>
+        </button>
+      )}
 
       {MEALS.map((meal) => {
         const items = entries.filter((e) => e.meal === meal)
@@ -222,7 +231,7 @@ export default function Diary({ goSettings }) {
       {aiReady && <Review date={date} goal={goal} />}
       {modules.ai && user && !user.ai?.ready && (
         <p className="muted center">
-          Photo logging and the weekly review run on your own AI provider.{' '}
+          Logging by voice or photo and the weekly review run on your own AI provider.{' '}
           <button type="button" className="link" onClick={() => goSettings('ai')}>
             Connect one in Settings
           </button>
@@ -252,6 +261,8 @@ export default function Diary({ goSettings }) {
       )}
 
       {open && <EntryDetail date={date} entry={open} onClose={() => setOpen(null)} />}
+
+      {describing && <DescribeMeal date={date} onClose={() => setDescribing(false)} />}
 
       {dishFrom && (
         <DishBuilder

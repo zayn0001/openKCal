@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { rowToFood } from './lib/catalogue'
 import { useStore } from './store'
 
 // The food catalogue: IFCT 2017 (Indian raw foods) and USDA FNDDS (cooked dishes,
@@ -6,21 +7,7 @@ import { useStore } from './store'
 // never edit it by hand. Loaded as its own chunk so the app shell stays small.
 const data = import('./foods-data.json')
 
-export const loadFoods = () =>
-  data.then((m) =>
-    m.default.map(([id, name, kcal, protein, carbs, fat, fibre, portions, sugar, satFat, sodium]) => ({
-      id,
-      name,
-      source: id.startsWith('ifct') ? 'IFCT' : 'USDA',
-      per100: {
-        kcal, protein, carbs, fat, fibre,
-        ...(sugar != null && { sugar }),
-        ...(satFat != null && { satFat }),
-        ...(sodium != null && { sodium }),
-      },
-      portions: portions.map(([name, grams]) => ({ name, grams })),
-    })),
-  )
+export const loadFoods = () => data.then((m) => m.default.map(rowToFood))
 
 /** Your foods and dishes plus the catalogue (loaded once, in the background). */
 export function useAllFoods() {

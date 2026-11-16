@@ -10,7 +10,7 @@ services:
     region: singapore # next to the Supabase project (ap-southeast-1)
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /api/me
+    healthCheckPath: /api/health
     envVars:
       # The port Render routes to.
       - key: PORT
@@ -18,9 +18,16 @@ services:
       # Render sits in front as a proxy: rate-limit sign-in by the visitor's address, not Render's.
       - key: TRUST_PROXY
         value: "1"
-      # Private instance: only the first account can be created. Set to "open" to let others sign up.
+      # The service's own address (e.g. https://thally-abcd.onrender.com). Leave it empty on the
+      # first deploy, then set it: it turns passkeys on and marks cookies Secure.
+      - key: ORIGIN
+        sync: false
+      # After the first account (the owner), new accounts need an invite code from an admin.
       - key: SIGNUP
-        value: ""
+        value: invite
+      # Only signed-in people use this server's app.
+      - key: ALLOW_GUEST
+        value: "0"
       # Storage in the same Supabase project as openGym, in a private bucket named `thally`.
       # The keys: Storage > S3 connection > New access key. They reach every bucket in the
       # project, so they are entered in Render and never committed.
@@ -33,7 +40,4 @@ services:
       - key: MIRROR_KEY_ID
         sync: false
       - key: MIRROR_SECRET
-        sync: false
-      # Optional: turns on photo logging and the weekly review.
-      - key: ANTHROPIC_API_KEY
         sync: false

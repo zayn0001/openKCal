@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import Dialog from './Dialog'
 import { scale } from './lib/nutrition'
 import { api } from './sync'
 
@@ -16,13 +17,8 @@ async function toJpegBase64(file, max = 1280) {
 // Photo of a plate -> AI-estimated items the user corrects, then adds.
 // Calls onAdd([{ name, grams, per100 }]).
 export default function PhotoLog({ title, onAdd, onClose }) {
-  const ref = useRef()
   const [items, setItems] = useState(null)
   const [status, setStatus] = useState('')
-
-  useEffect(() => {
-    if (!ref.current.open) ref.current.showModal()
-  }, [])
 
   const read = async (e) => {
     const file = e.target.files[0]
@@ -42,13 +38,8 @@ export default function PhotoLog({ title, onAdd, onClose }) {
   const chosen = (items || []).filter((i) => i.on && i.grams > 0)
 
   return (
-    <dialog ref={ref} onClose={onClose}>
-      <header>
-        <h2>{title}</h2>
-        <button type="button" className="ghost" onClick={onClose} aria-label="Close">
-          ✕
-        </button>
-      </header>
+    <Dialog title={title} onClose={onClose}>
+      <p className="muted">Sent to your own AI provider (Settings → AI). Every item is a draft you can fix.</p>
       <input type="file" accept="image/*" capture="environment" onChange={read} aria-label="Photo of your meal" />
       {status && (
         <p className="muted" role="status">
@@ -89,6 +80,6 @@ export default function PhotoLog({ title, onAdd, onClose }) {
           </div>
         </>
       )}
-    </dialog>
+    </Dialog>
   )
 }

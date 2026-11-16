@@ -26,3 +26,4 @@ dist-ssr
 data-server
 data-dev
 .env
+.env.dev

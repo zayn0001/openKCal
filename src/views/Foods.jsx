@@ -1,148 +1,140 @@
 import { useState } from 'react'
-import FoodPicker from '../FoodPicker'
-import { NUTRIENTS, recipePer100 } from '../lib/nutrition'
-import { useStore } from '../store'
+import Dialog from '../Dialog'
+import DishBuilder from '../DishBuilder'
+import FoodDetail from '../FoodDetail'
+import { FoodSearch } from '../FoodPicker'
+import { EXTRAS, INFO, NUTRIENTS } from '../lib/nutrition'
+import { energy } from '../lib/units'
+import { useSettings, useStore } from '../store'
 
-const LABELS = { kcal: 'kcal', protein: 'Protein g', carbs: 'Carbs g', fat: 'Fat g', fibre: 'Fibre g' }
-
-function NewFood() {
-  const addFood = useStore((s) => s.addFood)
+// Add or change one of your own foods. Values are per 100 g, as on a label.
+function FoodForm({ food, onClose }) {
+  const p = food?.per100 || {}
+  const portion = food?.portions?.[0]
   return (
-    <form
-      className="card"
-      onSubmit={(e) => {
-        e.preventDefault()
-        const v = Object.fromEntries(new FormData(e.target))
-        addFood({
-          name: v.name.trim(),
-          per100: Object.fromEntries(NUTRIENTS.map((k) => [k, +v[k] || 0])),
-          portions: v.portionName.trim() && +v.portionGrams > 0 ? [{ name: v.portionName.trim(), grams: +v.portionGrams }] : [],
-        })
-        e.target.reset()
-      }}
-    >
-      <h2>New food</h2>
-      <label>
-        Name
-        <input name="name" required maxLength="80" />
-      </label>
-      <p className="muted">Per 100 g</p>
-      <div className="fields">
-        {NUTRIENTS.map((k) => (
-          <label key={k}>
-            {LABELS[k]}
-            <input name={k} type="number" min="0" max={k === 'kcal' ? 900 : 100} step="any" required={k === 'kcal'} />
-          </label>
-        ))}
-      </div>
-      <p className="muted">Serving (optional)</p>
-      <div className="fields">
+    <Dialog title={food ? `Edit ${food.name}` : 'Add a food'} onClose={onClose}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          const v = Object.fromEntries(new FormData(e.target))
+          const per100 = Object.fromEntries(NUTRIENTS.map((k) => [k, +v[k] || 0]))
+          for (const k of EXTRAS) if (v[k] !== '') per100[k] = +v[k]
+          useStore.getState().addFood({
+            ...(food && { id: food.id, source: food.source }),
+            name: v.name.trim(),
+            per100,
+            portions: v.portionName.trim() && +v.portionGrams > 0 ? [{ name: v.portionName.trim(), grams: +v.portionGrams }] : [],
+          })
+          onClose()
+        }}
+      >
         <label>
           Name
-          <input name="portionName" placeholder="bowl" maxLength="30" />
+          <input name="name" required maxLength="80" defaultValue={food?.name} />
         </label>
-        <label>
-          Grams
-          <input name="portionGrams" type="number" min="0.1" step="any" />
-        </label>
-      </div>
-      <button>Save food</button>
-    </form>
+        <p className="muted">Per 100 g, from the label. Energy is in kcal.</p>
+        <div className="fields">
+          {[...NUTRIENTS, ...EXTRAS].map((k) => (
+            <label key={k}>
+              {INFO[k].label.replace('of which ', '')} ({k === 'kcal' ? 'kcal' : INFO[k].unit})
+              <input
+                name={k}
+                type="number"
+                min="0"
+                max={k === 'kcal' ? 900 : k === 'sodium' ? 40000 : 100}
+                step="any"
+                required={k === 'kcal'}
+                defaultValue={p[k] ?? ''}
+                placeholder={EXTRAS.includes(k) ? 'optional' : undefined}
+              />
+            </label>
+          ))}
+        </div>
+        <p className="muted">A serving, if the food comes in one (optional)</p>
+        <div className="fields">
+          <label>
+            Serving name
+            <input name="portionName" placeholder="bowl, piece, scoop" maxLength="30" defaultValue={portion?.name} />
+          </label>
+          <label>
+            Grams
+            <input name="portionGrams" type="number" min="0.1" step="any" defaultValue={portion?.grams} />
+          </label>
+        </div>
+        <div className="actions">
+          <button type="button" className="ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button>{food ? 'Save changes' : 'Save food'}</button>
+        </div>
+      </form>
+    </Dialog>
   )
 }
 
-function NewRecipe() {
-  const addFood = useStore((s) => s.addFood)
-  const [name, setName] = useState('')
-  const [servings, setServings] = useState(1)
-  const [items, setItems] = useState([]) // [{ name, grams, per100 }]
-  const [picking, setPicking] = useState(false)
-  const total = items.reduce((g, i) => g + i.grams, 0)
-
+function FoodList({ title, foods, empty, onOpen }) {
+  const { units } = useSettings()
   return (
-    <form
-      className="card"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (!items.length) return
-        addFood({
-          name: name.trim(),
-          per100: recipePer100(items),
-          portions: [{ name: 'serving', grams: Math.round(total / servings) }],
-        })
-        setName('')
-        setServings(1)
-        setItems([])
-      }}
-    >
-      <h2>New recipe</h2>
-      <div className="fields">
-        <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} required maxLength="80" />
-        </label>
-        <label>
-          Servings
-          <input type="number" min="1" step="1" required value={servings} onChange={(e) => setServings(+e.target.value || 1)} />
-        </label>
-      </div>
+    <section className="card">
+      <h2>{title}</h2>
       <ul className="list">
-        {items.map((it, i) => (
-          <li key={i} className="row">
-            <span>{it.name}</span>
-            <small>{Math.round(it.grams)} g</small>
-            <button type="button" className="ghost" onClick={() => setItems(items.filter((_, j) => j !== i))} aria-label={`Remove ${it.name}`}>
-              ✕
+        {foods.map((f) => (
+          <li key={f.id}>
+            <button type="button" className="row" onClick={() => onOpen(f)}>
+              <span>{f.name}</span>
+              <small>
+                {f.kind === 'dish' && f.portions[0]
+                  ? `${Math.round(energy((f.per100.kcal * f.portions[0].grams) / 100, units.energy))} ${units.energy}/serving`
+                  : `${Math.round(energy(f.per100.kcal, units.energy))} ${units.energy}/100 g`}
+              </small>
             </button>
           </li>
         ))}
       </ul>
-      {/* ponytail: uses raw ingredient weight; cooked weight (water lost or absorbed) is not modelled. */}
-      <p className="muted">
-        {items.length ? `${Math.round(total)} g total · ${Math.round(recipePer100(items).kcal)} kcal / 100 g` : 'Add the ingredients, raw weights.'}
-      </p>
-      <div className="actions">
-        <button type="button" className="ghost" onClick={() => setPicking(true)}>
-          + Ingredient
-        </button>
-        <button disabled={!items.length}>Save recipe</button>
-      </div>
-      {picking && (
-        <FoodPicker
-          title="Add ingredient"
-          onClose={() => setPicking(false)}
-          onPick={(food, grams) => {
-            setItems([...items, { name: food.name, grams, per100: food.per100 }])
-            setPicking(false)
-          }}
-        />
-      )}
-    </form>
+      {!foods.length && <p className="muted">{empty}</p>}
+    </section>
   )
 }
 
 export default function Foods() {
   const foods = useStore((s) => s.foods)
-  const removeFood = useStore((s) => s.removeFood)
+  const [open, setOpen] = useState(null) // food whose detail is showing
+  const [making, setMaking] = useState(false)
+  const [form, setForm] = useState(null) // false: closed, null: new, food: editing
+  const dishes = foods.filter((f) => f.kind === 'dish')
+  const own = foods.filter((f) => f.kind !== 'dish')
+
   return (
     <>
+      <div className="actions spread">
+        <button type="button" onClick={() => setMaking(true)}>
+          Make a dish
+        </button>
+        <button type="button" className="ghost" onClick={() => setForm({})}>
+          Add a food
+        </button>
+      </div>
+
       <section className="card">
-        <h2>My foods</h2>
-        <ul className="list">
-          {foods.map((f) => (
-            <li key={f.id} className="row">
-              <span>{f.name}</span>
-              <small>{Math.round(f.per100.kcal)} kcal / 100 g</small>
-              <button type="button" className="ghost" onClick={() => removeFood(f.id)} aria-label={`Delete ${f.name}`}>
-                ✕
-              </button>
-            </li>
-          ))}
-          {!foods.length && <li className="muted">Foods and recipes you add show up in search.</li>}
-        </ul>
+        <h2>Look up any food</h2>
+        <FoodSearch onChoose={setOpen} autoFocus={false} />
       </section>
-      <NewFood />
-      <NewRecipe />
+
+      <FoodList title="My dishes" foods={dishes} onOpen={setOpen} empty="Join ingredients into a dish with “Make a dish”. It is saved to your account and shows up in every search." />
+      <FoodList title="My foods" foods={own} onOpen={setOpen} empty="Foods you add, and packaged foods you look up by barcode, show up here." />
+
+      {open && (
+        <FoodDetail
+          food={open}
+          onClose={() => setOpen(null)}
+          onEditFood={(f) => {
+            setOpen(null)
+            setForm(f)
+          }}
+        />
+      )}
+      {making && <DishBuilder onClose={() => setMaking(false)} onSaved={() => setMaking(false)} />}
+      {form && <FoodForm food={form.id ? form : null} onClose={() => setForm(null)} />}
     </>
   )
 }

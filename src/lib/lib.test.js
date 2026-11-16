@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { recipePer100, scale, sum } from './nutrition.js'
+import { cell, diaryCsv } from './csv.js'
+import { buildDish, dishTotals } from './dish.js'
+import { macroSplit, per100Of, recipePer100, scale, sum } from './nutrition.js'
+import { presetOf, withDefaults } from './settings.js'
+import { fmtAmount, fmtEnergy, heightToCm, weightFromKg, weightToKg } from './units.js'
 import { searchFoods } from './search.js'
 import { isState, mergeState } from './state.js'
 import { targets } from './targets.js'
@@ -33,11 +37,15 @@ test('targets: Mifflin-St Jeor, macros add up, floor holds', () => {
 })
 
 test('searchFoods: every word must match, prefix and short names first', () => {
-  const foods = ['Chicken curry with rice', 'Curry, chicken', 'Chicken curry', 'Rice'].map((name) => ({ name }))
+  const foods = ['Chicken curry with rice', 'Curry, chicken', 'Chicken curry', 'Rice'].map((name) => ({ name, source: 'USDA' }))
   assert.deepEqual(searchFoods(foods, 'chicken  CURRY').map((f) => f.name), ['Chicken curry', 'Chicken curry with rice', 'Curry, chicken'])
   assert.equal(searchFoods(foods, '  ').length, 4)
   const roti = ['Chicken, rotisserie', 'Bread, chappatti or roti'].map((name) => ({ name }))
   assert.equal(searchFoods(roti, 'roti')[0].name, 'Bread, chappatti or roti') // whole word wins
+  const mine = [{ name: 'Dal makhani', source: 'USDA' }, { name: 'Dal makhani (mum’s)', kind: 'dish' }]
+  assert.equal(searchFoods(mine, 'dal')[0].kind, 'dish') // your own dish first
+  const rajma = [{ name: 'Rajmah, red', source: 'IFCT' }, { name: 'Test rajma chawal', kind: 'dish' }, { name: 'Pickled rajmas', kind: 'dish' }]
+  assert.deepEqual(searchFoods(rajma, 'rajma').map((f) => f.name), ['Test rajma chawal', 'Rajmah, red', 'Pickled rajmas'])
   assert.equal(searchFoods(foods, 'paneer').length, 0)
 })
 
@@ -64,4 +72,48 @@ test('weekSummary: seven days, rounded totals, weight change', () => {
   assert.equal(s.days.length, 7)
   assert.deepEqual([s.days[0].date, s.days[0].logged, s.days[6].kcal, s.days[6].logged], ['2026-03-01', false, 200, true])
   assert.deepEqual(s.weightKg, { start: 80, end: 79.2 })
+})
+
+test('extras (sugar, saturated fat, sodium): unknown stays unknown, partial sums say so', () => {
+  const milk = { kcal: 61, protein: 3.3, carbs: 4.6, fat: 3.2, fibre: 0, sugar: 4.8, satFat: 1.9, sodium: 38 }
+  assert.equal(scale(milk, 200).sodium, 76)
+  assert.equal('sugar' in scale(rice, 100), false)
+  const t = sum([scale(milk, 100), scale(rice, 100)])
+  assert.deepEqual([t.sugar, t.known.sugar, t.known.count], [4.8, 1, 2])
+  assert.equal(Math.round(per100Of({ grams: 50, kcal: 30.5, sugar: 2.4 }).sugar), 5)
+  assert.deepEqual(macroSplit({ protein: 25, carbs: 50, fat: 0 }), { protein: 33, carbs: 67, fat: 0 })
+})
+
+test('buildDish: raw or cooked weight, servings, extras only when every ingredient has them', () => {
+  const dal = { kcal: 350, protein: 24, carbs: 60, fat: 1.5, fibre: 10 } // dry lentils
+  const dish = buildDish({ name: ' Dal tadka ', ingredients: [{ name: 'Lentils', grams: 200, per100: dal }, { name: 'Ghee', grams: 20, per100: ghee }], servings: 4 })
+  assert.equal(dish.name, 'Dal tadka')
+  assert.equal(dish.rawGrams, 220)
+  assert.equal(Math.round(dishTotals(dish).kcal), 880) // 700 + 180
+  assert.deepEqual(dish.portions, [{ name: 'serving', grams: 55 }])
+  // Cooked in water to 800 g: same nutrients spread over more weight.
+  const cooked = buildDish({ name: 'Dal', ingredients: dish.ingredients, servings: 4, cookedGrams: 800 })
+  assert.equal(Math.round(cooked.per100.kcal), 110)
+  assert.equal(Math.round(dishTotals(cooked).kcal), 880)
+  assert.deepEqual(cooked.portions, [{ name: 'serving', grams: 200 }])
+  assert.equal('sugar' in cooked.per100, false)
+  const withSugar = buildDish({ name: 'x', ingredients: [{ name: 'a', grams: 100, per100: { ...rice, sugar: 1 } }] })
+  assert.equal(withSugar.per100.sugar, 1)
+})
+
+test('units, settings defaults, CSV', () => {
+  assert.equal(fmtEnergy(100, 'kJ'), '418 kJ')
+  assert.equal(fmtEnergy(99.6), '100 kcal')
+  assert.equal(Math.round(weightFromKg(80, 'lb')), 176)
+  assert.equal(Math.round(weightToKg(176.37, 'lb')), 80)
+  assert.equal(Math.round(heightToCm(70, 'in')), 178)
+  assert.deepEqual([fmtAmount(0.04, 'g'), fmtAmount(12.6, 'g'), fmtAmount(388.4, 'mg'), fmtAmount(undefined, 'g')], ['0 g', '13 g', '388 mg', '—'])
+  const s = withDefaults({ modules: { water: false }, units: { energy: 'kJ' } })
+  assert.deepEqual([s.units.energy, s.units.weight, s.modules.water, s.modules.ai], ['kJ', 'kg', false, true])
+  assert.equal(presetOf(withDefaults().modules), 'Everything')
+  assert.equal(presetOf(s.modules), 'Custom')
+  assert.equal(cell('=SUM(A1)'), "'=SUM(A1)")
+  assert.equal(cell('Dal, tadka "home"'), '"Dal, tadka ""home"""')
+  const csv = diaryCsv({ '2026-01-02': [{ meal: 'Lunch', name: 'Dal', grams: 150, kcal: 150.04 }] })
+  assert.equal(csv.split(/\r\n/)[1], '2026-01-02,Lunch,Dal,150,150,,,,,,,')
 })

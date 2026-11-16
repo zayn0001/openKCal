@@ -5,6 +5,7 @@ export const canScan = 'BarcodeDetector' in globalThis && !!globalThis.navigator
 export const isBarcode = (s) => /^\d{8,14}$/.test(s)
 
 const num = (v) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : 0)
+const opt = (v, k = 1) => (v != null && v !== '' && Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) * k : undefined)
 
 // An OFF product response -> a food in our shape, or null if it has no usable energy value.
 export function offToFood(code, json) {
@@ -22,6 +23,9 @@ export function offToFood(code, json) {
       carbs: num(n.carbohydrates_100g),
       fat: num(n.fat_100g),
       fibre: num(n.fiber_100g),
+      ...(opt(n.sugars_100g) !== undefined && { sugar: opt(n.sugars_100g) }),
+      ...(opt(n['saturated-fat_100g']) !== undefined && { satFat: opt(n['saturated-fat_100g']) }),
+      ...(opt(n.sodium_100g) !== undefined && { sodium: opt(n.sodium_100g, 1000) }), // OFF gives grams
     },
     portions: serving ? [{ name: 'serving', grams: serving }] : [],
   }
@@ -29,7 +33,7 @@ export function offToFood(code, json) {
 
 export async function lookupBarcode(code) {
   const res = await fetch(
-    `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,nutriments,serving_quantity`,
+    `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,nutriments,serving_quantity,quantity`,
   )
   if (!res.ok && res.status !== 404) throw new Error(`Open Food Facts answered ${res.status}`)
   return offToFood(code, await res.json().catch(() => null))

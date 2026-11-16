@@ -1,4 +1,5 @@
-import { today, useStore } from '../store'
+import { fmtWeight, weightFromKg, weightToKg } from '../lib/units'
+import { today, useSettings, useStore } from '../store'
 
 // ponytail: points are evenly spaced by entry, not by date; switch to a time
 // scale if gaps between weigh-ins start to mislead.
@@ -20,8 +21,12 @@ function Chart({ points, goal }) {
 export default function Weight() {
   const weights = useStore((s) => s.weights)
   const goal = useStore((s) => s.profile?.goalWeightKg)
-  const setWeight = useStore((s) => s.setWeight)
-  const points = Object.entries(weights).sort(([a], [b]) => a.localeCompare(b))
+  const { setWeight, removeWeight } = useStore.getState()
+  const unit = useSettings().units.weight
+  // Charted in the display unit, stored in kg.
+  const points = Object.entries(weights)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([d, kg]) => [d, weightFromKg(kg, unit)])
 
   return (
     <>
@@ -30,8 +35,8 @@ export default function Weight() {
         onSubmit={(e) => {
           e.preventDefault()
           const v = Object.fromEntries(new FormData(e.target))
-          setWeight(v.date, +v.kg)
-          e.target.kg.value = ''
+          setWeight(v.date, Math.round(weightToKg(+v.weight, unit) * 100) / 100)
+          e.target.weight.value = ''
         }}
       >
         <h2>Log weight</h2>
@@ -41,8 +46,8 @@ export default function Weight() {
             <input name="date" type="date" defaultValue={today()} max={today()} required />
           </label>
           <label>
-            Weight (kg)
-            <input name="kg" type="number" min="20" max="400" step="0.1" required />
+            Weight ({unit})
+            <input name="weight" type="number" min={unit === 'lb' ? 44 : 20} max={unit === 'lb' ? 880 : 400} step="0.1" required />
           </label>
         </div>
         <button>Save</button>
@@ -50,16 +55,19 @@ export default function Weight() {
 
       <section className="card">
         <h2>Trend</h2>
-        <Chart points={points} goal={goal} />
-        {goal != null && <p className="muted">Dashed line: goal {goal} kg</p>}
+        <Chart points={points} goal={goal != null ? weightFromKg(goal, unit) : null} />
+        {goal != null && <p className="muted">Dashed line: goal {fmtWeight(goal, unit)}</p>}
         <ul className="list">
           {points
             .slice(-10)
             .reverse()
-            .map(([d, kg]) => (
+            .map(([d]) => (
               <li key={d} className="row">
                 <span>{d}</span>
-                <small>{kg} kg</small>
+                <small>{fmtWeight(weights[d], unit)}</small>
+                <button type="button" className="ghost" onClick={() => removeWeight(d)} aria-label={`Delete the weigh-in on ${d}`}>
+                  ✕
+                </button>
               </li>
             ))}
           {!points.length && <li className="muted">No weigh-ins yet.</li>}

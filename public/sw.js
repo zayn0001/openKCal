@@ -13,3 +13,25 @@ self.addEventListener('fetch', (e) => {
       .catch(() => caches.match(e.request)),
   )
 })
+
+// Meal reminders from the Thally server (Settings → Reminders).
+self.addEventListener('push', (e) => {
+  let n = {}
+  try {
+    n = e.data.json()
+  } catch {
+    n = { title: 'Thally', body: e.data?.text() || '' }
+  }
+  e.waitUntil(self.registration.showNotification(n.title || 'Thally', { body: n.body, tag: n.tag, icon: '/favicon.svg', badge: '/favicon.svg' }))
+})
+
+// Tapping a reminder opens Thally, or brings an open window to the front.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => new URL(c.url).origin === self.location.origin)
+      return open ? open.focus() : self.clients.openWindow('/')
+    }),
+  )
+})

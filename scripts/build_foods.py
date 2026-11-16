@@ -5,8 +5,8 @@ Usage: python scripts/build_foods.py path/to/FoodData_Central_survey_food_csv_<d
   the FNDDS folder is the unzipped "Survey Foods (FNDDS)" CSV download from
   https://fdc.nal.usda.gov/download-datasets
 
-Output rows: [id, name, kcal, protein, carbs, fat, fibre, [[portion, grams], ...]],
-all per 100 g. Note IFCT carbohydrate excludes fibre; FNDDS carbohydrate includes it.
+Output rows: [id, name, kcal, protein, carbs, fat, fibre, [[portion, grams], ...], sugar, satFat, sodium],
+all per 100 g; sodium in mg. The last three are null where the source has no value (IFCT Table 1). Note IFCT carbohydrate excludes fibre; FNDDS carbohydrate includes it.
 """
 import csv, json, re, sys
 from collections import defaultdict
@@ -18,12 +18,12 @@ rows = []
 
 for f in json.load(open(root / 'data' / 'ifct.json', encoding='utf-8')):
     g = lambda k: f.get(k, 0)
-    rows.append([f"ifct:{f['code']}", f['name'], round(f['kj'] / 4.184), r1(g('protein')), r1(g('carbs')), r1(g('fat')), r1(g('fibre')), []])
+    rows.append([f"ifct:{f['code']}", f['name'], round(f['kj'] / 4.184), r1(g('protein')), r1(g('carbs')), r1(g('fat')), r1(g('fibre')), [], None, None, None])
 
 fndds = Path(sys.argv[1])
 read = lambda name: csv.DictReader(open(fndds / f'{name}.csv', encoding='utf-8', newline=''))
 # This file keys nutrients by their legacy number (nutrient.csv nutrient_nbr), not id.
-WANT = {'208': 'kcal', '203': 'protein', '205': 'carbs', '204': 'fat', '291': 'fibre'}
+WANT = {'208': 'kcal', '203': 'protein', '205': 'carbs', '204': 'fat', '291': 'fibre', '269': 'sugar', '606': 'satFat', '307': 'sodium'}
 nutrients = defaultdict(dict)
 for n in read('food_nutrient'):
     if n['nutrient_id'] in WANT:
@@ -40,8 +40,10 @@ for f in read('food'):
     if 'kcal' not in n:
         skipped += 1
         continue
+    opt = lambda k, digits=1: round(float(n[k]), digits) if n.get(k) not in (None, '') else None
     rows.append([f"fndds:{codes[f['fdc_id']]}", f['description'], round(float(n['kcal'])), r1(n.get('protein')),
-                 r1(n.get('carbs')), r1(n.get('fat')), r1(n.get('fibre')), portions[f['fdc_id']]])
+                 r1(n.get('carbs')), r1(n.get('fat')), r1(n.get('fibre')), portions[f['fdc_id']],
+                 opt('sugar'), opt('satFat'), opt('sodium', 0)])
 
 out = root / 'src' / 'foods-data.json'
 out.write_text(json.dumps(rows, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')

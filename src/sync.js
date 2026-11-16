@@ -1,29 +1,24 @@
-// Optional account sync. The app works without it; when the page is served by a
-// Thally server and you sign in, local changes are pushed and remote ones pulled.
+// Optional account sync. The app works without it; when the page is served by a Thally server
+// and you sign in, local changes are pushed and remote ones pulled.
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { api } from './api'
 import { KEYS, mergeState, pick } from './lib/state'
-import { useStore } from './store'
+import { EMPTY, useStore } from './store'
 
-export async function api(method, url, body) {
-  const res = await fetch(url, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : {},
-    body: body && JSON.stringify(body),
-  })
-  return { status: res.status, ok: res.ok, body: await res.json().catch(() => null) }
-}
+export { api } // older imports
 
 export const useSync = create(
   persist(
     () => ({
-      user: null,
+      user: null, // { id, name, email, admin, owner, hasPassword, passkeys, ai: { ready, provider } }
+      guest: false, // chose "use without an account" on a server that offers it
       rev: 0, // server revision this device last saw
       dirty: false, // local changes not yet on the server
-      server: null, // null: not checked, false: no server here, else { signup, ai }
+      server: null, // null: not checked, false: no server here, else { signup, guests, passkeys, push, version }
       error: '',
     }),
-    { name: 'food_sync_v1', partialize: ({ user, rev, dirty }) => ({ user, rev, dirty }) },
+    { name: 'food_sync_v1', partialize: ({ user, guest, rev, dirty }) => ({ user, guest, rev, dirty }) },
   ),
 )
 
@@ -35,7 +30,7 @@ let timer
 
 function apply(state) {
   applying = true
-  useStore.setState({ ...pick(state), gone: state.gone || [] })
+  useStore.setState({ ...EMPTY, ...pick(state), gone: state.gone || [], settings: state.settings || {} })
   applying = false
 }
 
@@ -56,9 +51,11 @@ export async function sync() {
       const r = await api('PUT', '/api/state', { rev, state: pick(useStore.getState()) })
       if (r.status === 401) return useSync.setState(SIGNED_OUT)
       if (r.status === 409) {
-        // Someone else saved first: fold their copy into ours and try again.
-        apply(mergeState(pick(useStore.getState()), r.body.state))
-        useSync.setState({ rev: r.body.rev })
+        // Another device saved first: fold its copy into ours and try again. A reset elsewhere
+        // replaces everything instead of merging.
+        apply(r.body.reset ? r.body.state : mergeState(pick(useStore.getState()), r.body.state))
+        useSync.setState({ rev: r.body.rev, dirty: !r.body.reset })
+        if (r.body.reset) return
         continue
       }
       if (!r.ok) return useSync.setState({ error: r.body?.error || 'Sync failed' })
@@ -71,25 +68,39 @@ export async function sync() {
   }
 }
 
-// kind: 'login' | 'signup'. Returns an error message, or '' on success.
-export async function signIn(kind, username, password) {
-  const r = await api('POST', `/api/${kind}`, { username, password }).catch(() => null)
-  if (!r?.ok) return r?.body?.error || 'Could not reach the server'
-  // dirty: push what this device has; a 409 then merges it with the account's data.
-  useSync.setState({ user: r.body.user, rev: 0, dirty: true, error: '' })
+/** After any successful sign-in: push what this device has; a 409 then merges it with the account. */
+export async function signedIn(user) {
+  useSync.setState({ user, guest: false, rev: 0, dirty: true, error: '' })
   await sync()
-  return ''
 }
 
-export async function signOut() {
-  await api('POST', '/api/logout', {}).catch(() => null)
+/** Refreshes what the server says about the signed-in account (after a change in Settings). */
+export async function refreshMe() {
+  const r = await api('GET', '/api/me').catch(() => null)
+  if (r?.ok) useSync.setState({ user: r.body.user, server: r.body.server })
+  return r?.body?.user
+}
+
+export async function signOut(everywhere = false) {
+  await api('POST', everywhere ? '/api/logout/all' : '/api/logout', {}).catch(() => null)
+  if (everywhere) await api('POST', '/api/logout', {}).catch(() => null)
   useSync.setState({ user: null, rev: 0, dirty: false, error: '' })
+}
+
+/** Reset everything: on the server too when signed in, so other devices follow. */
+export async function resetEverything() {
+  if (useSync.getState().user) {
+    const r = await api('POST', '/api/state/reset', {})
+    if (!r.ok) throw new Error(r.body?.error || 'Could not reset on the server')
+    apply(r.body.state)
+    useSync.setState({ rev: r.body.rev, dirty: false })
+  } else useStore.getState().reset()
 }
 
 export async function startSync() {
   const me = await api('GET', '/api/me').catch(() => null)
-  if (typeof me?.body?.signup !== 'boolean') return useSync.setState({ server: false })
-  useSync.setState({ server: { signup: me.body.signup, ai: me.body.ai }, user: me.body.user })
+  if (typeof me?.body?.server?.signup !== 'string') return useSync.setState({ server: false })
+  useSync.setState({ server: me.body.server, user: me.body.user })
   useStore.subscribe((s, prev) => {
     if (applying || !KEYS.some((k) => s[k] !== prev[k])) return
     changes++

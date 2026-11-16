@@ -1,6 +1,6 @@
 // The synced app data: its keys, its shape check, and the two-device merge.
 // Shared by the browser store and the server.
-export const KEYS = ['profile', 'diary', 'foods', 'weights', 'water', 'gone']
+export const KEYS = ['profile', 'diary', 'foods', 'weights', 'water', 'gone', 'settings']
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v)
 
@@ -15,12 +15,13 @@ export const isState = (d) =>
   Array.isArray(d.foods) &&
   isObj(d.weights) &&
   isObj(d.water) &&
-  (d.gone === undefined || Array.isArray(d.gone))
+  (d.gone === undefined || Array.isArray(d.gone)) &&
+  (d.settings === undefined || isObj(d.settings))
 
 // Merge this device's state with the server's after both changed.
 // Diary entries and foods are unioned by id, minus anything either side deleted
 // (`gone` holds deleted ids). For single values (profile, a day's weight or
-// water) this device wins.
+// water, each settings section) this device wins.
 // ponytail: `gone` only grows; prune ids older than a few months if it gets big.
 export function mergeState(local, remote) {
   if (!remote) return local
@@ -40,6 +41,7 @@ export function mergeState(local, remote) {
     foods: union(remote.foods, local.foods),
     weights: { ...remote.weights, ...local.weights },
     water: { ...remote.water, ...local.water },
+    settings: { ...remote.settings, ...local.settings },
     gone,
   }
 }

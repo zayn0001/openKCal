@@ -1,138 +1,197 @@
 # Thally
 
 **A thali you can tally.** Thally is a food and weight tracker that works on its own in your
-browser, with no account, and syncs between your devices when you run its small server.
+browser, with no account, and becomes a shared, synced app when you run its small server.
 Your data stays in a folder (or a bucket) you control: no third-party account, no ads, no telemetry.
 
-It follows the shape of [openGym](https://github.com/DuarteSantos8/openGym): a local-first web app,
-plain files instead of a database, and one container to self-host.
+It follows [openGym](https://github.com/DuarteSantos8/openGym): a local-first web app, plain files
+instead of a database, one container to self-host, and the same set of account, admin and
+integration features.
 
 ## What it does
 
 **Logging**
 
-- A diary by meal (breakfast, lunch, snack, dinner) with calories, protein, carbs, fat and fibre
-  running against your daily target.
+- A diary by meal (breakfast, lunch, snack, dinner) against your daily calorie and macro targets.
+  Tap any entry to see its full nutrition, change the amount or move it to another meal.
 - 5,956 foods to search: Indian raw foods from IFCT 2017 and cooked dishes with household portions
   (cup, piece, slice) from USDA FNDDS.
+- **Nutrition facts for every food you pick**: energy, protein, carbohydrate and sugars, fat and
+  saturated fat, fibre and sodium, for the amount you chose and per 100 g, with the share of
+  energy from protein, carbs and fat and where the numbers come from.
 - Packaged foods by barcode, scanned with the camera or typed in, looked up on Open Food Facts.
-  A product you find is saved so it works offline next time.
-- Your own foods, and recipes built from ingredients with a per-serving portion.
-- Water by the glass.
+- **Dishes:** join ingredients into a dish (your rajma chawal, your mum’s dal), with servings and,
+  if you weigh the pot, the cooked weight. Dishes are saved to your account, show up first in every
+  search, and can be opened and changed later. A whole logged meal can be saved as a dish too.
+- Your own foods from a label, water by the glass, and a breakdown of every nutrient for the day.
 
 **Targets and progress**
 
-- A profile (age, sex, height, weight, activity, goal) gives a daily calorie and macro target using
-  the Mifflin-St Jeor formula. It never suggests fewer than 1,200 kcal.
-- A weight log with a trend line and your goal weight. The target follows your latest weigh-in.
+- Daily targets from your profile (Mifflin-St Jeor). Never fewer than 1,200 kcal.
+- A weight log with a trend line and your goal weight.
 
-**Your data**
+**On your own AI provider** (optional)
 
-- Everything is stored in the browser and works offline once loaded. Installable to the home screen.
-- Export everything as one JSON file, and import it back.
-- Optional sync: sign in on each device and they stay in step, merging rather than overwriting.
+- **Photo logging:** photograph your plate and get draft entries with estimated grams to correct.
+- **Weekly review:** a short read of your last seven days against your targets.
+- Every model call uses the provider **you** connect in Settings → AI: Anthropic (Claude), OpenAI,
+  Google Gemini, or any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, OpenRouter). You
+  bring the key and you are billed for your own use; the server owner pays for nobody’s AI.
 
-**Optional AI** (off unless the server has an Anthropic key)
+**Accounts, sharing and admin** (with the server, as in openGym)
 
-- **Photo logging:** take a picture of your plate and get draft entries with estimated grams.
-  You correct and approve every item before it is saved.
-- **Weekly review:** a short plain-language read of your last seven days against your targets.
+- Sign in with a password or a **passkey**, by name or a sign-in e-mail. Add another device with a
+  one-time code instead of typing your password there.
+- The first account owns the server. Others join with an **invite code** (or sign-up can be open
+  or closed). Admins get a dashboard: people, switching accounts off, one-time password reset
+  codes, admin roles, handing over ownership, deleting accounts, invite codes, and an
+  **activity log** of sign-ins, failures and admin actions.
+- **Settings:** profile and targets, modules, units (kcal/kJ, kg/lb, cm/inches), look (theme and
+  accent), reminders, AI, integrations, data and backup, account, about.
+- **Modules:** switch whole parts of the app off (water, weight, barcode lookup, AI, reminders,
+  webhooks), with “Just logging” and “Everything” presets. Nothing is deleted.
+- **Meal reminders** by notification, in your time zone, skipped when that meal is already logged.
+- **Webhooks** to Home Assistant, n8n, Node-RED or ntfy when you log food, weigh in or save a
+  dish: signed with HMAC-SHA256, retried with backoff, with a delivery log, test and retry.
+- **Data:** JSON backup and restore, diary and weight as spreadsheets (CSV), reset everything.
+- Sync between devices that merges rather than overwrites.
 
-## Quick start
+## Run it
 
 You need [Node.js](https://nodejs.org) 22 or newer.
 
 ```bash
 npm install
-npm run dev
+npm run dev      # the app on :5173 with hot reload, data in this browser only
 ```
 
-Open http://localhost:5173. That is the whole app, storing data in this browser only.
-
-For sign-in, sync and AI during development, run the server next to it:
+For accounts, sync, AI and the rest, run the server next to it (`/api` is forwarded to it):
 
 ```bash
-npm start
+npm start        # the server on :3000; it also serves the built app from dist/
 ```
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | The app with hot reload on port 5173; `/api` is forwarded to port 3000 |
-| `npm start` | The server on port 3000 (also serves `dist/` if you have built it) |
+| `npm run dev` | The app with hot reload on port 5173 |
+| `npm start` | The server on port 3000 (also serves `dist/` once built) |
+| `npm run build` | Production build into `dist/` (offline support and reminders need this build) |
 | `npm test` | Unit tests for `src/lib` and the server tests |
-| `npm run build` | Production build into `dist/` |
 | `npm run lint` | oxlint |
-| `npm run android` | Build the Android debug APK |
+| `npm run android` | Android debug APK (see Android below) |
+
+For passkeys during development, set `ORIGIN` to the address in your browser, e.g.
+`ORIGIN=http://localhost:5173 npm start`.
 
 ## Self-hosting
 
 ### Docker
 
 ```bash
-cp .env.example .env
+cp .env.example .env    # optional settings, explained below
 docker compose up -d --build
 ```
 
-Open http://localhost:3000 and create your account. Data lives in `./data-server`: `users.json`,
-`sessions.json` and one `state/<username>.json` per person. Back up that folder and you have
-backed up everything.
+Open http://localhost:3000 and create the first account: it owns the server. Put it behind HTTPS
+(any reverse proxy) before using it over the internet, set `ORIGIN` to the address people type,
+and `TRUST_PROXY=1` so sign-in limits see each visitor’s own address.
 
-Put the server behind HTTPS (any reverse proxy) before using it over the internet. Session cookies
-are marked `Secure` when the proxy sends `X-Forwarded-Proto: https`.
+Everything lives in `./data-server`, so backing up that folder backs up the server:
+
+| File | What |
+|---|---|
+| `db.json` | Accounts (password hashes, passkeys’ public keys), invite codes, pending reset codes |
+| `sessions.json` | Sign-in sessions, stored as hashes of their tokens |
+| `state/<id>.json` | Each person’s synced data |
+| `ai/<id>.json` | Each person’s AI settings; keys encrypted with `secret` |
+| `hooks/<id>.json` | Webhooks (URL and signing secret encrypted) and their delivery log |
+| `push/<id>.json`, `vapid.json` | Reminder subscriptions and the server’s push keys |
+| `audit.log` | The activity log, one JSON object per line |
+| `secret` | The key that encrypts stored API keys and webhook secrets. Lose it and those must be entered again |
 
 ### Render free tier
 
-Render's free web services have no persistent disk: everything written is gone after a deploy,
-a restart, or the spin-down after 15 minutes idle. `server/mirror.js` keeps the data folder in an
-S3-compatible bucket instead (Supabase Storage, Cloudflare R2 or Backblaze B2). It is the same
-mirror as in the openGym fork this project borrows from.
-
-On start the mirror downloads the bucket into the data folder, and refuses to start if it cannot
-read it, so an empty server never overwrites your data. Then it runs the server unchanged, uploads
-changed files every 2 seconds, and uploads anything pending on shutdown.
+Render’s free web services have no persistent disk. `server/mirror.js` (from the openGym fork)
+keeps the data folder in an S3-compatible bucket instead (Supabase Storage, Cloudflare R2 or
+Backblaze B2): it downloads the bucket on start, refuses to start if it can’t read it, uploads
+changes every 2 seconds, and uploads anything pending on shutdown.
 
 1. In Supabase, create a **private** bucket named `thally` and an S3 access key
    (Storage → S3 connection → New access key).
-2. In `render.yaml`, check `MIRROR_ENDPOINT` and `MIRROR_REGION` match your Supabase project.
+2. Check `MIRROR_ENDPOINT` and `MIRROR_REGION` in `render.yaml` match your project.
 3. In Render: **New → Blueprint**, pick this repository, and enter `MIRROR_KEY_ID` and
-   `MIRROR_SECRET` when asked (and `ANTHROPIC_API_KEY` if you want the AI features).
-4. Open the service's address and create your account straight away: the first account is the
-   only one that can sign up.
+   `MIRROR_SECRET` when asked. Leave `ORIGIN` empty for now.
+4. Open the service’s address and create your account straight away (the first account owns it).
+5. Set `ORIGIN` to that address (e.g. `https://thally-abcd.onrender.com`) to turn passkeys on.
 
-Limits of this setup:
-
-- **Cold starts.** After 15 minutes idle the service sleeps; the next request takes about a minute.
-- **A hard crash can lose the last ~2 seconds of writes.** A normal shutdown uploads everything
-  first, and a device pushes its copy again on its next sync.
-- **One instance per bucket, one app per bucket.** The mirror copies the whole bucket into the
-  data folder, so do not point Thally at a bucket another app uses.
-- **Supabase pauses free projects** after about a week without activity. While paused the service
-  refuses to start; resume the project in the dashboard.
+Limits: a cold start of about a minute after 15 idle minutes; a hard crash can lose the last ~2
+seconds of writes; one instance per bucket, and one app per bucket (the whole bucket is copied in);
+Supabase pauses free projects after about a week without activity. Reminders are only sent while
+the service is awake, so on a free plan that sleeps they are unreliable.
 
 ### Settings
 
 | Variable | Default | What it does |
 |---|---|---|
 | `PORT` | `3000` | Port the server listens on |
-| `DATA_DIR` | `./data-server` (`/data` in Docker) | Where accounts and state are stored |
-| `SIGNUP` | unset | `open` lets anyone create an account. Otherwise only the first account can be created |
-| `TRUST_PROXY` | unset | `1` when behind a reverse proxy, so sign-in rate limits use the visitor's address |
-| `ANTHROPIC_API_KEY` | unset | Turns on photo logging and the weekly review |
-| `AI_MODEL` | `claude-opus-5-5` | Model used for both AI features |
-| `MIRROR_ENDPOINT` | unset | S3 endpoint. When set, the data folder is mirrored to a bucket |
+| `DATA_DIR` | `./data-server` (`/data` in Docker) | Where everything is stored |
+| `ORIGIN` | unset | The exact address people use, e.g. `https://thally.example.com`. Turns passkeys on and marks cookies `Secure` |
+| `SIGNUP` | `invite` | Who may create an account after the first: `invite` (a code from an admin), `open` (anyone), `closed` (nobody) |
+| `ALLOW_GUEST` | `1` | `0` removes “Use without an account”, so the server’s app is for signed-in people only |
+| `ADMIN_UIDS` | unset | Comma-separated account IDs that are always admins (Settings → Account → Account ID) |
+| `TRUST_PROXY` | unset | `1` behind a reverse proxy that overwrites `X-Forwarded-For` |
+| `ALLOW_LAN` | unset | `1` lets everyone’s AI endpoints and webhooks reach home-network addresses. Admins always may, and may also use this machine (Ollama on localhost) |
+| `AI_DAILY_LIMIT` | `40` | AI requests per person per day |
+| `AUDIT_LOG` | `1` | `0` turns the activity log off |
+| `AUDIT_MAX`, `AUDIT_DAYS` | `5000`, `90` | How much of the activity log is kept |
+| `AUDIT_IP` | unset | `net` records the network part of addresses (`203.0.113.0/24`), `full` the whole address |
+| `PUSH_CONTACT` | unset | An e-mail push services can contact about this server’s notifications |
+| `MIRROR_ENDPOINT` | unset | S3 endpoint; when set, the data folder is mirrored to a bucket |
 | `MIRROR_BUCKET`, `MIRROR_KEY_ID`, `MIRROR_SECRET` | unset | Required with `MIRROR_ENDPOINT` |
-| `MIRROR_REGION` | `auto` | Bucket region (`auto` suits R2; Supabase wants the project's region) |
+| `MIRROR_REGION` | `auto` | Bucket region (`auto` suits R2; Supabase wants the project’s region) |
 
-## AI features
+## AI on your own provider
 
-Set `ANTHROPIC_API_KEY` on the server. Signed-in users then see a **Photo** button on each meal
-and a **Weekly review** card in the diary.
+Each person connects their own provider in **Settings → AI**: pick it, paste an API key (optional
+for a local endpoint), use **List models** to pick a model, tick the box confirming what is sent,
+**Save** and **Test the connection**.
 
-- The key stays on the server and never reaches the browser.
-- Photos are shrunk in the browser, sent to Anthropic through your server, and not stored.
-- The numbers are estimates from a model. Nothing is saved until you approve it.
-- Each user is limited to 40 AI calls a day, because calls are billed to the key's owner.
-- The weekly review is general guidance, not medical advice.
+- Keys are encrypted with the server’s `secret` (AES-256-GCM, bound to the account and provider),
+  never returned to the browser, and never part of the synced data or a backup export.
+- What goes to the provider, only when you use a feature: the meal photo (shrunk in the browser);
+  for a weekly review, your daily totals, targets and weight change for those seven days.
+- Anthropic is called through the official SDK (default model `claude-opus-5-5`, with automatic
+  fallback to another model if the first declines a review). OpenAI, Gemini and compatible
+  endpoints are called over HTTPS with the key in a header, never in the URL.
+- A compatible endpoint may only be on the server’s own network for admins (or for everyone with
+  `ALLOW_LAN=1`); cloud metadata addresses are never reachable.
+- Answers are estimates and drafts you correct. Not medical advice.
+
+## Webhooks
+
+Settings → Integrations → Add a webhook. Events: `food.logged` (new diary entries, with the day’s
+totals), `weighin.logged`, `dish.saved`. Each delivery is a `POST` of
+`{ version, id, type, createdAt, data }` with these headers:
+
+- `X-Thally-Event`, `X-Thally-Delivery` (the same id on every retry of one delivery)
+- `X-Thally-Signature: t=<unix seconds>,v1=<hex>`: HMAC-SHA256 of `<t>.<raw body>` with the
+  webhook’s secret, shown once when you add it
+
+```js
+import crypto from 'node:crypto'
+function verify(secret, rawBody, header) {
+  const m = /^t=(\d+),v1=([0-9a-f]{64})$/.exec(header || '')
+  if (!m || Math.abs(Date.now() / 1000 - Number(m[1])) > 300) return false
+  const want = crypto.createHmac('sha256', secret).update(`${m[1]}.${rawBody}`).digest()
+  const got = Buffer.from(m[2], 'hex')
+  return got.length === want.length && crypto.timingSafeEqual(got, want)
+}
+```
+
+Answer `2xx` within 10 seconds. Timeouts, connection errors, `408`, `425`, `429` and `5xx` are
+retried after about 30 s, then 1, 2, 4, 8, 16 and 32 minutes (`Retry-After` is honoured); `410`
+pauses the webhook. Only events from the last 7 days are sent, so restoring a backup doesn’t replay
+history. Pending retries are kept in memory, so a restart drops them.
 
 ## Android
 
@@ -140,45 +199,50 @@ and a **Weekly review** card in the diary.
 npm run android
 ```
 
-Needs JDK 21 and the Android SDK. The APK appears under
-`android/app/build/outputs/apk/debug/`. It is the standalone app: data stays on the phone and
-there is no sync or AI, because those come from your server. For sync on a phone, open your
-server's address in the browser and install it from the browser menu.
+Needs JDK 21 and the Android SDK; the APK appears under `android/app/build/outputs/apk/debug/`.
+It is the standalone app: data stays on the phone, with no sync, AI or reminders, because those
+come from your server. For those on a phone, open your server’s address in the browser and install
+it from the browser menu. On some Windows networks Java can’t download over IPv6; set
+`JAVA_OPTS` and `GRADLE_OPTS` to `-Djava.net.preferIPv4Stack=true` first.
 
 ## How it is built
 
 ```
-src/lib/       Pure logic, each piece unit-tested:
-               targets, nutrition, search, state merge, week summary, barcode parsing
-src/views/     One file per screen (Diary, Foods, Weight, Profile)
-src/*.jsx      Shared dialogs: food picker, barcode scanner, photo log, account
-src/store.js   All app data, persisted in the browser
-src/sync.js    Pushes and pulls that data when signed in
-server/        server.js  accounts, sessions, state, static files (node:http, no framework)
-               ai.js      the two Anthropic calls
-               mirror.js  data folder kept in an S3 bucket
+src/lib/       Pure logic, each piece unit-tested: targets, nutrition, dishes, search, units,
+               settings, state merge, week summary, CSV, barcode parsing
+src/views/     The four tabs: Diary, Foods, Weight, Settings
+src/settings/  The settings pages (account, admin, AI, reminders, integrations, data, basics)
+src/*.jsx      Shared dialogs: food picker and detail, nutrition panel, dish builder, sign-in
+src/store.js   All app data, persisted in the browser; src/sync.js pushes and pulls it
+server/        server.js (routes), accounts.js, passkeys.js, ai.js, hooks.js, push.js, audit.js,
+               secure.js (encryption, signatures, outbound address rules), mirror.js
 scripts/       Build the food catalogue from the source datasets
 android/       Capacitor shell
 ```
 
-The server has two runtime dependencies (`@anthropic-ai/sdk` and `zod`, both for the AI features).
-The frontend is React, Vite and Zustand.
-
 ### How sync works
 
-The whole state is one JSON document with a revision number. A device sends its copy along with
-the revision it last saw. If the server has moved on, it answers `409` with the current copy; the
-device merges and tries again. The merge (`src/lib/state.js`) unions diary entries and foods by
-id, keeps deletions deleted on both sides, and for a single value such as one day's weight lets
-the device making the change win.
+The whole state is one JSON document with a revision number. A device sends its copy with the
+revision it last saw. If the server has moved on, it answers `409` with the current copy; the device
+merges and tries again. The merge (`src/lib/state.js`) unions diary entries and foods by id, keeps
+deletions deleted on both sides, and for a single value (one day’s weight, a settings section) lets
+the device making the change win. “Reset everything” replaces instead of merging.
 
 ### Security
 
-- Passwords are hashed with scrypt and a per-user salt; comparisons are constant-time.
-- Sessions are `HttpOnly`, `SameSite=Strict` cookies. Only a hash of each session token is stored.
-- Sign-in and sign-up are rate limited (10 attempts per 15 minutes per address).
-- State-changing requests must be JSON, which blocks cross-site form posts.
-- Sign-up is closed after the first account unless you open it.
+- Passwords: scrypt with a per-account salt, compared in constant time; 10 to 256 characters, and
+  the most-guessed ones refused. Wrong passwords pause the account (5 free, then 1 minute doubling
+  to an hour) and the address (20 sign-in attempts per 15 minutes).
+- Passkeys: WebAuthn, bound to `ORIGIN`; only public keys are stored.
+- Sessions: `HttpOnly`, `SameSite=Strict` cookies for 30 days; stored as hashes; a new password signs
+  out every other device.
+- Changing the password or e-mail, adding or removing a passkey, making a device code, handing over
+  ownership and deleting the account all need the password or a passkey, not just a session.
+- Admins can’t act on the owner or on other admins (only the owner can), and can’t reset an admin’s
+  password. Reset and invite codes are stored as hashes and work once.
+- Requests that change anything must be JSON, which blocks cross-site form posts.
+- Outbound requests (AI endpoints, webhooks, push) refuse private and metadata addresses at connect
+  time as well as when saved, so DNS tricks don’t get around it.
 
 ## Food data
 
@@ -186,7 +250,7 @@ the device making the change win.
 
 | Source | What | Notes |
 |---|---|---|
-| IFCT 2017 (National Institute of Nutrition, Hyderabad) | 525 Indian raw foods, from Table 1 | Copyright NIN/ICMR. Fine for personal use; check their terms before publishing or distributing this app. Carbohydrate excludes fibre. No household portions. |
+| IFCT 2017 (National Institute of Nutrition, Hyderabad) | 525 Indian raw foods, from Table 1 | Copyright NIN/ICMR. Fine for personal use; check their terms before publishing or distributing this app. Carbohydrate excludes fibre. No sugars, saturated fat or sodium, and no household portions. |
 | USDA FNDDS 2021-2023 | 5,431 foods as eaten, with portions | Public domain. Carbohydrate includes fibre. |
 | Open Food Facts | Packaged foods, looked up live by barcode | Open Database Licence. Crowd-sourced, so check the numbers. |
 
@@ -197,26 +261,26 @@ python scripts/extract_ifct.py path/to/IFCT2017.pdf > data/ifct.json
 python scripts/build_foods.py path/to/FoodData_Central_survey_food_csv_2024-10-31
 ```
 
-The FNDDS folder is the unzipped "Survey Foods (FNDDS)" CSV download from
+The FNDDS folder is the unzipped “Survey Foods (FNDDS)” CSV download from
 https://fdc.nal.usda.gov/download-datasets. The IFCT extractor reads the table by word position
-and checks every row against the book's own energy formula; rows that fail are dropped and
+and checks every row against the book’s own energy formula; rows that fail are dropped and
 reported (3 of 528: N001, P080, S005).
 
-## Known limits
+## Not built (yet)
 
-- No iPhone app, no Apple Health or Health Connect, no meal reminders.
-- Sign-in is username and password; there are no passkeys and no password reset.
-- Camera barcode scanning needs a browser with `BarcodeDetector` (Chrome on Android; not Safari).
-  Typing the number works everywhere.
-- Metric units only.
-- Recipes use raw ingredient weights; water lost or gained in cooking is not modelled.
+From openGym, these were left out as they don’t fit a food tracker or need native work:
+
+- Translations (openGym has 20 languages; Thally is English only)
+- iPhone app, Apple Watch and Wear OS apps, Apple Health and Health Connect
+- Importing from other apps (MyFitnessPal, Cronometer); progress photos; the MCP server
 
 ## Credits
 
-Architecture and the Render deployment follow [openGym](https://github.com/DuarteSantos8/openGym)
-by Duarte Santos. Food data comes from the sources listed above.
+Accounts, admin, modules, integrations and the Render deployment follow
+[openGym](https://github.com/DuarteSantos8/openGym) by Duarte Santos. Food data comes from the
+sources above.
 
 ## Licence
 
-No licence has been chosen yet, so all rights are reserved. Note that the bundled IFCT 2017 data
-has its own copyright (see Food data).
+No licence has been chosen yet, so all rights are reserved. The bundled IFCT 2017 data has its own
+copyright (see Food data).

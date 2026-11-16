@@ -3,12 +3,18 @@ services:
     build: .
     ports: ["3000:3000"]
     volumes: ["./data-server:/data"]
-    # Settings come from .env (see .env.example); all are optional.
+    # Settings come from .env (see .env.example and the README); all are optional.
     environment:
-      SIGNUP: ${SIGNUP:-}
+      ORIGIN: ${ORIGIN:-}
+      SIGNUP: ${SIGNUP:-invite}
+      ALLOW_GUEST: ${ALLOW_GUEST:-1}
+      ADMIN_UIDS: ${ADMIN_UIDS:-}
       TRUST_PROXY: ${TRUST_PROXY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      AI_MODEL: ${AI_MODEL:-}
+      ALLOW_LAN: ${ALLOW_LAN:-}
+      AI_DAILY_LIMIT: ${AI_DAILY_LIMIT:-40}
+      AUDIT_LOG: ${AUDIT_LOG:-1}
+      AUDIT_IP: ${AUDIT_IP:-}
+      PUSH_CONTACT: ${PUSH_CONTACT:-}
       MIRROR_ENDPOINT: ${MIRROR_ENDPOINT:-}
       MIRROR_BUCKET: ${MIRROR_BUCKET:-}
       MIRROR_REGION: ${MIRROR_REGION:-}

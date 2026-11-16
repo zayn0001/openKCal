@@ -18,7 +18,7 @@ import { createPasskeys } from './passkeys.js'
 import { createPush } from './push.js'
 import { instanceKey, randomId } from './secure.js'
 
-const VERSION = '0.2.0'
+const VERSION = '0.3.0'
 const EMPTY = { profile: null, diary: {}, foods: [], weights: {}, water: {}, gone: [], settings: {} }
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -29,12 +29,15 @@ const TYPES = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
+  '.apk': 'application/vnd.android.package-archive',
 }
 
 /**
  * @param {object} o
  * @param {string} o.dataDir  where everything is stored
  * @param {string} [o.distDir]  built frontend to serve, if any
+ * @param {string} [o.siteDir]  the download page (website/), served at /welcome
+ * @param {string} [o.releasesDir]  the Android app and its details (releases/), served at /download/
  * @param {'open'|'invite'|'closed'} [o.signup]  who may sign up once the first account exists
  * @param {boolean} [o.guests]  offer "use without an account" (the app then keeps data in the browser)
  * @param {string[]} [o.adminUids]  accounts that are always admins
@@ -46,7 +49,7 @@ const TYPES = {
  * @param {number} [o.pushTickMs]  reminder check interval; 0 turns the timer off (tests)
  */
 export async function createApp({
-  dataDir, distDir, signup = 'invite', guests = true, adminUids = [], origin, trustProxy = false, allowLan = false,
+  dataDir, distDir, siteDir, releasesDir, signup = 'invite', guests = true, adminUids = [], origin, trustProxy = false, allowLan = false,
   audit: auditOpts = {}, aiDailyLimit = 40, pushTickMs = 60_000, pushSubject,
 }) {
   const key = await instanceKey(dataDir)
@@ -521,8 +524,30 @@ export async function createApp({
     'POST /api/login/device', 'POST /api/logout',
   ])
 
+  // The download page and the Android app, from the repository's website/ and releases/ folders.
+  // basename() keeps a /download/ path inside releases/.
+  function extraFile(pathname) {
+    if (siteDir && (pathname === '/welcome' || pathname === '/welcome/')) return path.join(siteDir, 'index.html')
+    if (releasesDir && pathname.startsWith('/download/')) return path.join(releasesDir, path.basename(decodeURIComponent(pathname)))
+    return null
+  }
+
   async function serveStatic(req, res, pathname) {
-    if (!distDir || (req.method !== 'GET' && req.method !== 'HEAD')) throw new HttpError(404, 'Not found')
+    if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(404, 'Not found')
+    const extra = extraFile(pathname)
+    if (extra) {
+      const size = await stat(extra).then((s) => (s.isFile() ? s.size : -1), () => -1)
+      if (size < 0) throw new HttpError(404, 'Not found')
+      res.setHeader('Content-Type', TYPES[path.extname(extra)] || 'application/octet-stream')
+      res.setHeader('Cache-Control', 'no-cache')
+      if (extra.endsWith('.apk')) {
+        res.setHeader('Content-Length', size)
+        res.setHeader('Content-Disposition', 'attachment; filename="thally.apk"')
+      }
+      if (req.method === 'HEAD') return res.end()
+      return createReadStream(extra).on('error', () => res.destroy()).pipe(res)
+    }
+    if (!distDir) throw new HttpError(404, 'Not found')
     // normalize() on the absolute URL path collapses any "..", so the join can't leave distDir.
     let file = path.join(distDir, path.normalize(decodeURIComponent(pathname)))
     const isFile = (f) => stat(f).then((s) => s.isFile(), () => false)
@@ -579,6 +604,8 @@ export async function main() {
   const app = await createApp({
     dataDir: dataDir(),
     distDir: path.join(root, 'dist'),
+    siteDir: path.join(root, 'website'),
+    releasesDir: path.join(root, 'releases'),
     signup,
     guests: on(env.ALLOW_GUEST, true),
     adminUids: String(env.ADMIN_UIDS || '').split(',').map((s) => s.trim()).filter(Boolean),

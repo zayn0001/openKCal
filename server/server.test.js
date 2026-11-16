@@ -190,7 +190,11 @@ test('admin dashboard: disable, reset code, roles, ownership, delete, activity l
 })
 
 test('static files: served from dist, no path traversal', async (t) => {
-  const { base } = await start(t, { distDir: path.resolve('server') }) // any real folder will do
+  // Any real folders will do: server/ stands in for dist and for releases.
+  const { base } = await start(t, { distDir: path.resolve('server'), siteDir: path.resolve('website'), releasesDir: path.resolve('server') })
+  assert.match(await (await fetch(base + '/welcome')).text(), /Every thali, tallied/)
+  assert.match(await (await fetch(base + '/download/push.js')).text(), /dueReminders/)
+  assert.equal((await fetch(base + '/download/..%2fpackage.json')).status, 404) // stays in releases/
   assert.match(await (await fetch(base + '/ai.js')).text(), /createAi/)
   const escape = await fetch(base + '/..%2f..%2fpackage.json')
   assert.equal(escape.status, 404)

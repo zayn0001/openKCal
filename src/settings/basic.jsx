@@ -194,6 +194,11 @@ export function AboutPage() {
       </p>
       <p className="muted">{server ? `Connected to a Thally server, version ${server.version}.` : 'Running on its own in this browser.'}</p>
       <p className="muted">Install it: {install}.</p>
+      {server && (
+        <p>
+          <a href="/welcome#get">Get the Android app</a>
+        </p>
+      )}
       <h3>Food data</h3>
       <ul className="plain">
         <li>Indian Food Composition Tables 2017, National Institute of Nutrition (ICMR). Copyright NIN.</li>

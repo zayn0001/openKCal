@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Thally: a food tracker for the way you eat</title>
+    <meta name="description" content="Log Indian home meals by saying what you ate. Nutrition for 5,956 foods, your own dishes, no ads, and your data stays with you." />
+    <meta name="theme-color" content="#1f2547" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Mukta:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --rice: #f4f6f5;
+        --paper: #ffffff;
+        --ink: #1f2547;
+        --ink-soft: #4b5274;
+        --steel: #c7ced1;
+        --steel-light: #e4e9eb;
+        --turmeric: #e3a21a;
+        --leaf: #2f6b3a;
+        --chilli: #b5432c;
+        --line: #d7dde0;
+        --display: 'Baloo 2', 'Segoe UI', system-ui, sans-serif;
+        --body: 'Mukta', 'Segoe UI', system-ui, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --rice: #151a30;
+          --paper: #1d2340;
+          --ink: #eef0f6;
+          --ink-soft: #b4b9d0;
+          --line: #323a5e;
+          --leaf: #8fcf7a;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+      body { margin: 0; background: var(--rice); color: var(--ink); font: 400 1.08rem/1.6 var(--body); }
+      a { color: inherit; }
+      :focus-visible { outline: 3px solid var(--turmeric); outline-offset: 3px; border-radius: 4px; }
+      .wrap { max-width: 68rem; margin: 0 auto; padding: 0 1.25rem; }
+      h1, h2, h3 { font-family: var(--display); line-height: 1.05; margin: 0; }
+      h1 { font-size: clamp(2.8rem, 7vw, 5.2rem); font-weight: 800; letter-spacing: -0.02em; }
+      h2 { font-size: clamp(1.9rem, 4vw, 2.7rem); font-weight: 800; letter-spacing: -0.01em; }
+      h3 { font-size: 1.3rem; font-weight: 600; }
+      p { margin: 0; max-width: 38rem; }
+      .soft { color: var(--ink-soft); }
+
+      /* buttons: one strong, one quiet */
+      .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.3rem; border-radius: 999px; font: 600 1.05rem var(--body); text-decoration: none; border: 2px solid var(--ink); }
+      .btn.main { background: var(--ink); color: var(--rice); }
+      .btn.quiet { background: transparent; color: var(--ink); }
+      .btn:hover { transform: translateY(-1px); }
+      .btn small { font-weight: 400; opacity: 0.8; }
+
+      /* top bar */
+      header.top { padding: 1rem 0; }
+      header.top .wrap { display: flex; align-items: center; gap: 1.5rem; }
+      .brand { display: flex; align-items: center; gap: 0.55rem; font: 800 1.5rem var(--display); text-decoration: none; }
+      .brand svg { width: 2rem; height: 2rem; }
+      header nav { margin-left: auto; display: flex; gap: 1.2rem; align-items: center; }
+      header nav a { text-decoration: none; color: var(--ink-soft); }
+      header nav a:hover { color: var(--ink); }
+      header nav .btn { padding: 0.45rem 1rem; font-size: 0.95rem; color: var(--rice); }
+      @media (max-width: 40rem) { header nav a:not(.btn) { display: none; } }
+
+      /* hero: the plate is the tally */
+      .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 2rem; align-items: center; padding-block: 2.5rem 4rem; }
+      .hero p.lede { font-size: 1.3rem; margin: 1.3rem 0 1.8rem; color: var(--ink-soft); }
+      .hero .ctas { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+      .hero .fine { margin-top: 1rem; font-size: 0.95rem; color: var(--ink-soft); }
+      .plate { width: 100%; max-width: 30rem; justify-self: center; }
+      .plate text { font-family: var(--body); fill: #1f2547; }
+      .plate .k { font: 600 17px var(--body); }
+      .plate .v { font: 400 14px var(--body); }
+      .plate .total { font: 800 30px var(--display); }
+      @media (max-width: 52rem) { .hero { grid-template-columns: 1fr; padding-block-start: 1rem; } .plate { max-width: 24rem; } }
+
+      section { padding: 4.5rem 0; }
+      .band { background: var(--paper); border-block: 1px solid var(--line); }
+      .head { margin-bottom: 2.2rem; }
+      .head p { margin-top: 0.8rem; color: var(--ink-soft); font-size: 1.15rem; }
+
+      /* say what you ate */
+      .say { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; }
+      .phone { background: var(--rice); border: 1px solid var(--line); border-radius: 26px; padding: 1.2rem; max-width: 24rem; }
+      .bubble { background: var(--ink); color: var(--rice); border-radius: 18px 18px 18px 4px; padding: 0.8rem 1rem; display: flex; gap: 0.6rem; align-items: start; }
+      .bubble svg { flex: none; width: 1.2rem; height: 1.2rem; margin-top: 0.2rem; }
+      .drafts { list-style: none; margin: 1rem 0 0; padding: 0; }
+      .drafts li { display: grid; grid-template-columns: auto 1fr auto; gap: 0.6rem; align-items: center; padding: 0.55rem 0; border-top: 1px solid var(--line); }
+      .tick { width: 1.15rem; height: 1.15rem; border-radius: 4px; background: var(--leaf); display: grid; place-items: center; }
+      .tick svg { width: 0.8rem; height: 0.8rem; }
+      .drafts small { color: var(--ink-soft); }
+      .new { display: inline-block; margin-left: 0.35rem; font-size: 0.78rem; padding: 0 0.45rem; border-radius: 999px; border: 1px solid var(--leaf); color: var(--leaf); }
+      .phone .confirm { margin-top: 0.9rem; width: 100%; justify-content: center; }
+      .say ol { margin: 0; padding-left: 1.3rem; display: grid; gap: 1rem; }
+      .say ol li::marker { font: 800 1.2rem var(--display); color: var(--turmeric); }
+      @media (max-width: 52rem) { .say { grid-template-columns: 1fr; } }
+
+      /* what it does: three groups, read top to bottom */
+      .groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5rem; }
+      .groups h3 { padding-bottom: 0.6rem; border-bottom: 3px solid var(--turmeric); margin-bottom: 0.9rem; }
+      .groups ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
+      .groups b { display: block; font-weight: 600; }
+      .groups span { color: var(--ink-soft); }
+      @media (max-width: 52rem) { .groups { grid-template-columns: 1fr; } }
+
+      /* get it */
+      .ways { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+      .way { background: var(--paper); border: 1px solid var(--line); border-radius: 20px; padding: 1.8rem; display: grid; gap: 1rem; align-content: start; }
+      .way.android { border: 2px solid var(--ink); }
+      .way ol { margin: 0; padding-left: 1.3rem; display: grid; gap: 0.5rem; }
+      .way ol li::marker { font-weight: 600; color: var(--turmeric); }
+      .way ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.3rem; }
+      .meta { font-size: 0.92rem; color: var(--ink-soft); }
+      .meta code, pre { font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; }
+      .sha { word-break: break-all; }
+      pre { background: var(--ink); color: var(--rice); border-radius: 12px; padding: 0.8rem 1rem; margin: 0; overflow-x: auto; }
+      @media (max-width: 52rem) { .ways { grid-template-columns: 1fr; } }
+
+      footer { padding: 3rem 0 4rem; color: var(--ink-soft); font-size: 0.95rem; }
+      footer .wrap { display: grid; gap: 0.6rem; }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="#top" aria-label="Thally, home">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#c7ced1" /><circle cx="32" cy="32" r="25" fill="#e4e9eb" /><circle cx="22" cy="24" r="8" fill="#e3a21a" /><circle cx="42" cy="24" r="8" fill="#2f6b3a" /><circle cx="32" cy="42" r="9" fill="#f7f4ea" /></svg>
+          Thally
+        </a>
+        <nav aria-label="Page">
+          <a href="#say">How it works</a>
+          <a href="#features">What it does</a>
+          <a href="#get">Get it</a>
+          <a class="btn main" href="#get">Download</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <div class="wrap hero">
+        <div>
+          <h1>Every thali, tallied.</h1>
+          <p class="lede">
+            Tell Thally what you ate, the way you would tell a friend. It knows roti, dal and rajma chawal, counts what is in them, and keeps your numbers on your
+            phone or your own server.
+          </p>
+          <div class="ctas">
+            <a class="btn main" href="/download/thally.apk" download>Download for Android <small data-apk-size></small></a>
+            <a class="btn quiet" href="/">Open the web app</a>
+          </div>
+          <p class="fine">Free. No ads, no subscription, no tracking.</p>
+        </div>
+
+        <svg class="plate" viewBox="0 0 520 520" role="img" aria-label="A thali with two rotis, dal, bhindi, rajma, curd and rice, adding up to 1,184 kcal and 46 g of protein">
+          <circle cx="260" cy="260" r="248" fill="#c7ced1" />
+          <circle cx="260" cy="260" r="232" fill="#e4e9eb" />
+          <circle cx="260" cy="260" r="232" fill="none" stroke="#b3bcc0" stroke-width="2" />
+          <!-- katoris on the upper rim, each labelled with its share of the tally -->
+          <g>
+            <circle cx="119" cy="209" r="62" fill="#b3bcc0" /><circle cx="119" cy="209" r="52" fill="#e3a21a" />
+            <text class="k" x="119" y="206" text-anchor="middle">Dal</text><text class="v" x="119" y="226" text-anchor="middle">218 kcal</text>
+          </g>
+          <g>
+            <circle cx="197" cy="124" r="62" fill="#b3bcc0" /><circle cx="197" cy="124" r="52" fill="#6f9a3c" />
+            <text class="k" x="197" y="121" text-anchor="middle" style="fill:#fff">Bhindi</text><text class="v" x="197" y="141" text-anchor="middle" style="fill:#fff">96 kcal</text>
+          </g>
+          <g>
+            <circle cx="323" cy="124" r="62" fill="#b3bcc0" /><circle cx="323" cy="124" r="52" fill="#8b3a2b" />
+            <text class="k" x="323" y="121" text-anchor="middle" style="fill:#fff">Rajma</text><text class="v" x="323" y="141" text-anchor="middle" style="fill:#fff">203 kcal</text>
+          </g>
+          <g>
+            <circle cx="401" cy="209" r="62" fill="#b3bcc0" /><circle cx="401" cy="209" r="52" fill="#fbfaf4" />
+            <text class="k" x="401" y="206" text-anchor="middle">Curd</text><text class="v" x="401" y="226" text-anchor="middle">61 kcal</text>
+          </g>
+          <!-- rotis and rice on the plate itself -->
+          <ellipse cx="190" cy="372" rx="78" ry="74" fill="#d2a86c" /><ellipse cx="172" cy="358" rx="78" ry="74" fill="#e2bd84" />
+          <text class="k" x="172" y="356" text-anchor="middle">2 rotis</text><text class="v" x="172" y="376" text-anchor="middle">238 kcal</text>
+          <ellipse cx="350" cy="370" rx="82" ry="62" fill="#fbfaf4" />
+          <text class="k" x="350" y="368" text-anchor="middle">Rice</text><text class="v" x="350" y="388" text-anchor="middle">368 kcal</text>
+          <!-- the tally -->
+          <rect x="176" y="218" width="168" height="74" rx="37" fill="#1f2547" />
+          <text class="total" x="260" y="257" text-anchor="middle" style="fill:#f4f6f5">1,184 kcal</text>
+          <text class="v" x="260" y="279" text-anchor="middle" style="fill:#e3a21a">46 g protein</text>
+        </svg>
+      </div>
+
+      <section class="band" id="say">
+        <div class="wrap say">
+          <div>
+            <div class="head">
+              <h2>Say what you ate. Check it. Done.</h2>
+              <p>No scrolling through menus of “Dal, yellow, cooked, with oil”. Speak or type a sentence and Thally drafts the entries for you.</p>
+            </div>
+            <ol>
+              <li>Tap the microphone and say it: “two rotis, a katori of dal and a chai”.</li>
+              <li>Thally finds each food among yours and the 5,956 it knows, and estimates the grams. A home-made dish it hasn’t seen before gets drafted from its ingredients.</li>
+              <li>You see every item before anything is saved. Fix the grams, move it to another meal, untick what is wrong, then log it.</li>
+            </ol>
+          </div>
+          <div class="phone" aria-label="Example of a meal being logged from a sentence">
+            <div class="bubble">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1a7 7 0 0 0 6-6.9h-2Z" /></svg>
+              <span>Two rotis, a katori of dal, and mum’s methi thepla for lunch</span>
+            </div>
+            <ul class="drafts">
+              <li><span class="tick"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9l5-6" stroke="#fff" stroke-width="2" fill="none" /></svg></span><span>Roti <small>80 g · Lunch</small></span><small>238 kcal</small></li>
+              <li><span class="tick"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9l5-6" stroke="#fff" stroke-width="2" fill="none" /></svg></span><span>Dal <small>150 g · Lunch</small></span><small>218 kcal</small></li>
+              <li><span class="tick"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9l5-6" stroke="#fff" stroke-width="2" fill="none" /></svg></span><span>Methi thepla<span class="new">new dish</span> <small>60 g · Lunch</small></span><small>192 kcal</small></li>
+            </ul>
+            <span class="btn main confirm">Log 3 items and save 1 dish</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="features">
+        <div class="wrap">
+          <div class="head">
+            <h2>What it does</h2>
+            <p>Made for kitchens where nothing comes with a barcode, and still happy to scan the things that do.</p>
+          </div>
+          <div class="groups">
+            <div>
+              <h3>Logging</h3>
+              <ul>
+                <li><b>By voice or text</b><span>A sentence becomes diary entries you confirm.</span></li>
+                <li><b>Indian food first</b><span>525 foods from India’s official composition tables, plus 5,431 cooked dishes with cup, piece and slice portions.</span></li>
+                <li><b>Your own dishes</b><span>Join ingredients into your rajma chawal, say how many it serves, weigh the pot if you like. It shows up first in every search.</span></li>
+                <li><b>Barcodes</b><span>Scan a packet, or type its number, and it is looked up on Open Food Facts.</span></li>
+                <li><b>A photo of your plate</b><span>Get a first draft from a picture, then correct it.</span></li>
+              </ul>
+            </div>
+            <div>
+              <h3>Your numbers</h3>
+              <ul>
+                <li><b>Full nutrition for every food</b><span>Energy, protein, carbs and sugars, fat and saturated fat, fibre and sodium, for what you ate and per 100 g.</span></li>
+                <li><b>Daily targets</b><span>Worked out from your height, weight, activity and goal.</span></li>
+                <li><b>Weight and water</b><span>A trend line towards your goal weight, and glasses of water.</span></li>
+                <li><b>A weekly review</b><span>A short read of your week against your targets, if you want one.</span></li>
+                <li><b>Meal reminders</b><span>A nudge at lunch, skipped when lunch is already logged.</span></li>
+              </ul>
+            </div>
+            <div>
+              <h3>Your data, your people</h3>
+              <ul>
+                <li><b>Works on its own</b><span>The Android app keeps everything on your phone. No account needed.</span></li>
+                <li><b>Or on your own server</b><span>Sync your phone and laptop, and invite family with a code.</span></li>
+                <li><b>Your AI, your key</b><span>Voice and photo logging use the AI you connect: Claude, OpenAI, Gemini, or a model on your own computer.</span></li>
+                <li><b>Passkeys</b><span>Sign in with your fingerprint or face, or a password.</span></li>
+                <li><b>Take it with you</b><span>Export everything as a backup file or a spreadsheet, any time.</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="get">
+        <div class="wrap">
+          <div class="head">
+            <h2>Get Thally</h2>
+            <p>The same app two ways. The difference is where your diary lives.</p>
+          </div>
+          <div class="ways">
+            <div class="way android">
+              <h3>On your Android phone</h3>
+              <p class="soft">For anyone. Your diary stays on your phone.</p>
+              <ol>
+                <li>Download the app.</li>
+                <li>Open the file. Android asks once whether your browser may install apps; allow it.</li>
+                <li>Open Thally, set up your profile, and log your first meal.</li>
+              </ol>
+              <div><a class="btn main" href="/download/thally.apk" download>Download for Android <small data-apk-size></small></a></div>
+              <p class="meta">
+                Version <span data-apk-version>0.3.0</span> · Android 7 or newer · signed. Voice logging, reminders and sync need a server, so on the phone on its own you log by
+                search, barcode and your dishes.
+              </p>
+              <p class="meta sha" data-apk-sha-row hidden>SHA-256: <code data-apk-sha></code></p>
+            </div>
+            <div class="way">
+              <h3>With your own server</h3>
+              <p class="soft">For a household, or anyone who wants every device in step.</p>
+              <ul>
+                <li>Use it on Android, iPhone and your laptop, always in sync</li>
+                <li>Log by voice or photo with your own AI key</li>
+                <li>Meal reminders, invites for family, an admin dashboard</li>
+              </ul>
+              <pre><code>docker compose up -d</code></pre>
+              <p class="meta">Or on Render’s free plan, with your data kept in a storage bucket. The setup guide is in the project’s README.</p>
+              <p class="meta"><b>On iPhone?</b> Open your server’s address in Safari, then Share → Add to Home Screen.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <p>
+          Food data: Indian Food Composition Tables 2017 (National Institute of Nutrition, ICMR), the USDA Food and Nutrient Database for Dietary Studies, and Open
+          Food Facts.
+        </p>
+        <p>Accounts, sync and self-hosting follow openGym by Duarte Santos. Targets and AI answers are estimates, not medical advice.</p>
+      </div>
+    </footer>
+
+    <script>
+      // Fill in the size, version and checksum of the APK this server offers.
+      fetch('/download/thally.json')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((a) => {
+          if (!a) return
+          const mb = `${(a.size / 1048576).toFixed(1)} MB`
+          document.querySelectorAll('[data-apk-size]').forEach((el) => (el.textContent = mb))
+          document.querySelectorAll('[data-apk-version]').forEach((el) => (el.textContent = a.version))
+          document.querySelectorAll('[data-apk-sha]').forEach((el) => (el.textContent = a.sha256))
+          document.querySelectorAll('[data-apk-sha-row]').forEach((el) => (el.hidden = false))
+        })
+        .catch(() => {})
+    </script>
+  </body>
+</html>

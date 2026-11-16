@@ -209,10 +209,29 @@ retried after about 30 s, then 1, 2, 4, 8, 16 and 32 minutes (`Retry-After` is h
 pauses the webhook. Only events from the last 7 days are sent, so restoring a backup doesn’t replay
 history. Pending retries are kept in memory, so a restart drops them.
 
+## Download page and Android app
+
+The server serves a download page at **`/welcome`** (`website/index.html`) and the Android app at
+**`/download/thally.apk`**, so anyone can install it even though the repository is private. The
+sign-in screen and Settings → About link to the page.
+
+A release:
+
+```bash
+npm run apk                       # signed release build (needs android/keystore.properties)
+node scripts/release-apk.mjs      # copies it to releases/thally.apk, writes size and SHA-256
+gh release create v0.3.0 releases/thally.apk --title "Thally 0.3.0"
+```
+
+Bump `versionCode` and `versionName` in `android/app/build.gradle` first. The APK is signed with a
+key kept outside the repository (`android/keystore.properties`, git-ignored, says where). **Back
+that key up**: Android only installs an update signed with the same key, so losing it means
+everyone has to uninstall and reinstall.
+
 ## Android
 
 ```bash
-npm run android
+npm run android                   # debug build
 ```
 
 Needs JDK 21 and the Android SDK; the APK appears under `android/app/build/outputs/apk/debug/`.

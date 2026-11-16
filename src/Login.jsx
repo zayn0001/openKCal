@@ -153,6 +153,12 @@ export default function Login({ full = false }) {
 
       {problem && mode !== 'signup' && <p role="alert">{problem}</p>}
 
+      {full && (
+        <p className="muted center">
+          <a href="/welcome">What is Thally, and the Android app</a>
+        </p>
+      )}
+
       {full && server?.guests && (
         <p className="muted center">
           <button type="button" className="link" onClick={() => useSync.setState({ guest: true })}>

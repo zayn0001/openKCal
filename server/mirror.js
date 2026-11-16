@@ -12,12 +12,13 @@
 //
 // ponytail: a write is confirmed to the client before it is uploaded, so a hard crash loses up to
 // a couple of seconds of writes (a device pushes its copy again on its next sync; an account just
-// created would be gone). One instance per bucket: two would overwrite each other. Give this app
-// a bucket of its own: everything in the bucket is copied into DATA_DIR on start.
+// created would be gone). One instance per bucket folder: two would overwrite each other. Sharing a
+// bucket with another app needs MIRROR_PREFIX, or each would copy in (and overwrite) the other's files.
 //
 // Env: MIRROR_ENDPOINT (https://<project>.supabase.co/storage/v1/s3, or
 // https://<account>.r2.cloudflarestorage.com), MIRROR_BUCKET, MIRROR_KEY_ID, MIRROR_SECRET,
-// MIRROR_REGION (default "auto", which R2 wants; Supabase wants the project's region).
+// MIRROR_REGION (default "auto", which R2 wants; Supabase wants the project's region), MIRROR_PREFIX
+// (a folder in the bucket, e.g. "thally/", when the bucket is shared with other apps).
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,7 +48,10 @@ export function sign(method, url, body, { keyId, secret, region }, amz = new Dat
 const unxml = s => s.replace(/&(lt|gt|quot|apos|amp);/g, (_, e) => ({ lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' })[e]);
 
 /** list / get / put / del against one bucket, path-style. */
-export function bucket({ endpoint, bucket: name, keyId, secret, region = 'auto' }) {
+// `prefix` (e.g. "thally/") keeps this app's files in a folder of a bucket other apps use too;
+// only keys under it are listed, read, written or deleted.
+export function bucket({ endpoint, bucket: name, keyId, secret, region = 'auto', prefix = '' }) {
+  prefix = String(prefix || '').replace(/^\/+/, '').replace(/\/*$/, prefix ? '/' : '');
   const creds = { keyId, secret, region };
   const base = endpoint.replace(/\/+$/, '') + '/' + enc(name);
   async function call(method, key, query, body = Buffer.alloc(0)) {
@@ -67,15 +71,18 @@ export function bucket({ endpoint, bucket: name, keyId, secret, region = 'auto' 
       const keys = [];
       let token;
       do {
-        const xml = await (await call('GET', '', { 'list-type': '2', ...(token && { 'continuation-token': token }) })).text();
-        for (const m of xml.matchAll(/<Key>([^<]*)<\/Key>/g)) keys.push(unxml(m[1]));
+        const xml = await (await call('GET', '', { 'list-type': '2', ...(prefix && { prefix }), ...(token && { 'continuation-token': token }) })).text();
+        for (const m of xml.matchAll(/<Key>([^<]*)<\/Key>/g)) {
+          const k = unxml(m[1]);
+          if (k.startsWith(prefix) && k.length > prefix.length) keys.push(k.slice(prefix.length));
+        }
         token = /<IsTruncated>true<\/IsTruncated>/.test(xml) && unxml(xml.match(/<NextContinuationToken>([^<]*)</)?.[1] || '');
       } while (token);
       return keys;
     },
-    get: async key => Buffer.from(await (await call('GET', key)).arrayBuffer()),
-    put: (key, body) => call('PUT', key, null, body),
-    del: key => call('DELETE', key),
+    get: async key => Buffer.from(await (await call('GET', prefix + key)).arrayBuffer()),
+    put: (key, body) => call('PUT', prefix + key, null, body),
+    del: key => call('DELETE', prefix + key),
   };
 }
 
@@ -139,7 +146,7 @@ async function main() {
   const dir = dataDir();
   const store = bucket({
     endpoint: env.MIRROR_ENDPOINT, bucket: env.MIRROR_BUCKET,
-    keyId: env.MIRROR_KEY_ID, secret: env.MIRROR_SECRET, region: env.MIRROR_REGION || 'auto',
+    keyId: env.MIRROR_KEY_ID, secret: env.MIRROR_SECRET, region: env.MIRROR_REGION || 'auto', prefix: env.MIRROR_PREFIX,
   });
   fs.mkdirSync(dir, { recursive: true });
   let seen;

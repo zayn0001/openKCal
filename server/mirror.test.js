@@ -25,7 +25,7 @@ function fakeS3() {
     const chunks = [];
     for await (const c of req) chunks.push(c);
     if (req.method === 'GET' && !key) {
-      const all = [...objects.keys()].sort();
+      const all = [...objects.keys()].filter(k => k.startsWith(url.searchParams.get('prefix') || '')).sort();
       const from = +(url.searchParams.get('continuation-token') || 0);
       const page = all.slice(from, from + 2);
       const more = from + 2 < all.length;
@@ -73,4 +73,24 @@ test('restore, then upload changes and deletions, skipping temporary files', asy
 test('restore throws when the bucket cannot be read, so the server never starts empty', async () => {
   const store = bucket({ endpoint: 'http://127.0.0.1:1', bucket: 'b', keyId: 'k', secret: 's' });
   await assert.rejects(restore(store, os.tmpdir()));
+});
+
+test('a prefix keeps this app in its own folder of a shared bucket', async t => {
+  const { server, objects, endpoint } = await fakeS3();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mirror-'));
+  t.after(() => { server.close(); fs.rmSync(dir, { recursive: true, force: true }); });
+  objects.set('db.json', Buffer.from('openGym'));          // another app's files at the top
+  objects.set('secret', Buffer.from('openGym secret'));
+  objects.set('thally/db.json', Buffer.from('{}'));
+  const store = bucket({ endpoint, bucket: 'b', keyId: 'k', secret: 's', prefix: 'thally' });
+  const seen = await restore(store, dir);
+  assert.deepEqual([...seen.keys()], ['db.json']);
+  assert.equal(fs.readFileSync(path.join(dir, 'db.json'), 'utf8'), '{}');
+  fs.writeFileSync(path.join(dir, 'secret'), 'thally secret');
+  fs.unlinkSync(path.join(dir, 'db.json'));
+  await pass(store, dir, seen);
+  assert.equal(objects.get('secret').toString(), 'openGym secret');  // untouched
+  assert.equal(objects.get('db.json').toString(), 'openGym');
+  assert.equal(objects.get('thally/secret').toString(), 'thally secret');
+  assert.ok(!objects.has('thally/db.json'));
 });

@@ -18,6 +18,7 @@ services:
       MIRROR_ENDPOINT: ${MIRROR_ENDPOINT:-}
       MIRROR_BUCKET: ${MIRROR_BUCKET:-}
       MIRROR_REGION: ${MIRROR_REGION:-}
+      MIRROR_PREFIX: ${MIRROR_PREFIX:-}
       MIRROR_KEY_ID: ${MIRROR_KEY_ID:-}
       MIRROR_SECRET: ${MIRROR_SECRET:-}
     restart: unless-stopped

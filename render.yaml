@@ -28,13 +28,17 @@ services:
       # Only signed-in people use this server's app.
       - key: ALLOW_GUEST
         value: "0"
-      # Storage in the same Supabase project as openGym, in a private bucket named `thally`.
-      # The keys: Storage > S3 connection > New access key. They reach every bucket in the
-      # project, so they are entered in Render and never committed.
+      # Storage in the same Supabase project and private `default` bucket as openGym, in a folder of
+      # its own (MIRROR_PREFIX): both apps keep a `secret` and an `audit.log` at the top of their data
+      # folder, so without the folder they would overwrite each other's. The keys: Storage > S3
+      # connection > New access key. They reach every bucket in the project, so they are entered
+      # in Render and never committed.
       - key: MIRROR_ENDPOINT
         value: https://ismyhkcsxrswqsfzfrxe.storage.supabase.co/storage/v1/s3
       - key: MIRROR_BUCKET
-        value: thally
+        value: default
+      - key: MIRROR_PREFIX
+        value: thally/
       - key: MIRROR_REGION
         value: ap-southeast-1
       - key: MIRROR_KEY_ID

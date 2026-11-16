@@ -116,16 +116,20 @@ keeps the data folder in an S3-compatible bucket instead (Supabase Storage, Clou
 Backblaze B2): it downloads the bucket on start, refuses to start if it can’t read it, uploads
 changes every 2 seconds, and uploads anything pending on shutdown.
 
-1. In Supabase, create a **private** bucket named `thally` and an S3 access key
-   (Storage → S3 connection → New access key).
-2. Check `MIRROR_ENDPOINT` and `MIRROR_REGION` in `render.yaml` match your project.
+1. In Supabase, make sure the **private** `default` bucket exists (the one openGym uses) and you
+   have an S3 access key (Storage → S3 connection → New access key).
+2. Check `MIRROR_ENDPOINT` and `MIRROR_REGION` in `render.yaml` match your project. Thally keeps
+   its files under `thally/` in that bucket (`MIRROR_PREFIX`), so it never touches openGym’s.
 3. In Render: **New → Blueprint**, pick this repository, and enter `MIRROR_KEY_ID` and
    `MIRROR_SECRET` when asked. Leave `ORIGIN` empty for now.
 4. Open the service’s address and create your account straight away (the first account owns it).
 5. Set `ORIGIN` to that address (e.g. `https://thally-abcd.onrender.com`) to turn passkeys on.
 
 Limits: a cold start of about a minute after 15 idle minutes; a hard crash can lose the last ~2
-seconds of writes; one instance per bucket, and one app per bucket (the whole bucket is copied in);
+seconds of writes; one instance per bucket folder. openGym’s own mirror copies the whole bucket
+into its data folder on start, `thally/` included, so whoever can read openGym’s server can read
+Thally’s files too (API keys and webhook secrets in them stay encrypted with Thally’s `secret`,
+which is also in that folder);
 Supabase pauses free projects after about a week without activity. Reminders are only sent while
 the service is awake, so on a free plan that sleeps they are unreliable.
 
@@ -149,6 +153,7 @@ the service is awake, so on a free plan that sleeps they are unreliable.
 | `MIRROR_ENDPOINT` | unset | S3 endpoint; when set, the data folder is mirrored to a bucket |
 | `MIRROR_BUCKET`, `MIRROR_KEY_ID`, `MIRROR_SECRET` | unset | Required with `MIRROR_ENDPOINT` |
 | `MIRROR_REGION` | `auto` | Bucket region (`auto` suits R2; Supabase wants the project’s region) |
+| `MIRROR_PREFIX` | unset | A folder in the bucket for Thally’s files (e.g. `thally/`), needed when the bucket is shared with another app |
 
 ## AI on your own provider
 

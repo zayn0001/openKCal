@@ -33,5 +33,6 @@
     "web-push": "^3.6.7",
     "zod": "^4.6.7"
   },
-  "description": "Local-first nutrition, calorie and macro tracker: companion to openGym"
+  "description": "Local-first nutrition, calorie and macro tracker: companion to openGym",
+  "homepage": "https://openkcal.onrender.com"
 }

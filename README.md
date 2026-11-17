@@ -5,6 +5,10 @@
 </p>
 
 <p align="center">
+  <a href="https://openkcal.onrender.com"><strong>🌐 Live Web App: https://openkcal.onrender.com</strong></a>
+</p>
+
+<p align="center">
   <a href="#features">Features</a> •
   <a href="#opengym-integration">openGym Sync</a> •
   <a href="#healthifyme-wellness-suite">HealthifyMe Features</a> •

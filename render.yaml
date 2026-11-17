@@ -18,10 +18,10 @@ services:
       # Render sits in front as a proxy: rate-limit sign-in by the visitor's address, not Render's.
       - key: TRUST_PROXY
         value: "1"
-      # The service's own address (e.g. https://openkcal-abcd.onrender.com). Leave it empty on the
-      # first deploy, then set it: it turns passkeys on and marks cookies Secure.
+      # The service's own address (https://openkcal.onrender.com).
+      # Turns passkeys on and marks cookies Secure.
       - key: ORIGIN
-        sync: false
+        value: https://openkcal.onrender.com
       # After the first account (the owner), new accounts need an invite code from an admin.
       - key: SIGNUP
         value: invite

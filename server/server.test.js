@@ -195,6 +195,10 @@ test('static files: served from dist, no path traversal', async (t) => {
   assert.match(await (await fetch(base + '/welcome')).text(), /Every (calorie|thali)/)
   assert.match(await (await fetch(base + '/download/push.js')).text(), /dueReminders/)
   assert.equal((await fetch(base + '/download/..%2fpackage.json')).status, 404) // stays in releases/
+  // No APK in releases/: the newest CI build on GitHub
+  const apk = await fetch(base + '/download/openkcal.apk', { redirect: 'manual' })
+  assert.equal(apk.status, 302)
+  assert.equal(apk.headers.get('location'), 'https://github.com/zayn0001/openKCal/releases/latest/download/openkcal.apk')
   assert.match(await (await fetch(base + '/ai.js')).text(), /createAi/)
   const escape = await fetch(base + '/..%2f..%2fpackage.json')
   assert.equal(escape.status, 404)

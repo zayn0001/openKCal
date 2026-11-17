@@ -33,7 +33,7 @@ export function offToFood(code, json) {
 
 export async function lookupBarcode(code) {
   const url = `https://world.openfoodfacts.net/api/v2/product/${code}.json?fields=product_name,brands,nutriments,serving_quantity,quantity`
-  const headers = { 'User-Agent': 'openKCal - Web - Version 0.3.0 - https://github.com/openkcal/openkcal' }
+  const headers = { 'User-Agent': 'openKCal - Web - Version 0.3.0 - https://github.com/zayn0001/openKCal' }
   const res = await fetch(url, { headers }).catch(() => null)
   if (!res || (!res.ok && res.status !== 404)) {
     // Fallback to world.openfoodfacts.org
@@ -52,7 +52,7 @@ export async function searchOff(query, limit = 15) {
   const q = (query || '').trim()
   if (!q || q.length < 2) return []
   const url = `https://world.openfoodfacts.net/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=${limit}&fields=code,product_name,brands,nutriments,serving_quantity,quantity`
-  const headers = { 'User-Agent': 'openKCal - Web - Version 0.3.0 - https://github.com/openkcal/openkcal' }
+  const headers = { 'User-Agent': 'openKCal - Web - Version 0.3.0 - https://github.com/zayn0001/openKCal' }
   let res = await fetch(url, { headers }).catch(() => null)
   if (!res || !res.ok) {
     // Fallback to .org mirror

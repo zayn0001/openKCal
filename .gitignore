@@ -27,3 +27,7 @@ data-server
 data-dev
 .env
 .env.dev
+
+# APKs are published by CI as GitHub releases; the server redirects there
+releases/*.apk
+releases/*.json

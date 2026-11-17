@@ -5,5 +5,5 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   // In dev, the sync server runs separately: npm start
-  server: { proxy: { '/api': 'http://localhost:3000' } },
+  server: { proxy: { '/api': 'http://localhost:3000', '/download': 'http://localhost:3000' } },
 })

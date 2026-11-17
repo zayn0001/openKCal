@@ -158,7 +158,7 @@ export default function Onboarding({ onExit }) {
               <Icon name="download" /> Download APK ({apkMeta.size})
             </a>
             <a
-              href="https://github.com/openkcal/openkcal/releases/latest/download/openkcal.apk"
+              href="https://github.com/zayn0001/openKCal/releases/latest/download/openkcal.apk"
               target="_blank"
               rel="noopener noreferrer"
               className="btn ghost lg"
@@ -336,7 +336,7 @@ export default function Onboarding({ onExit }) {
               <Icon name="download" /> Direct APK Download ({apkMeta.size})
             </a>
             <a
-              href="https://github.com/openkcal/openkcal/releases/latest/download/openkcal.apk"
+              href="https://github.com/zayn0001/openKCal/releases/latest/download/openkcal.apk"
               target="_blank"
               rel="noopener noreferrer"
               className="btn tinted"

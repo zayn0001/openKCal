@@ -18,6 +18,9 @@ import { createPasskeys } from './passkeys.js'
 import { createPush } from './push.js'
 import { instanceKey, randomId } from './secure.js'
 
+// Where CI publishes the signed APK (see .github/workflows/release-apk.yml)
+const RELEASES_URL = 'https://github.com/zayn0001/openKCal/releases/latest/download'
+
 const VERSION = '0.3.0'
 const EMPTY = { profile: null, diary: {}, foods: [], weights: {}, water: {}, gone: [], settings: {} }
 const TYPES = {
@@ -623,11 +626,32 @@ export async function createApp({
     return null
   }
 
+  // No APK in releases/: hand out the newest build CI published on GitHub instead. The APK is a
+  // redirect; the small details file is fetched here (GitHub sends no CORS headers) and cached.
+  let latestInfo = { at: 0, body: null }
+  async function latestRelease(res, name) {
+    if (name === 'openkcal.apk') {
+      res.writeHead(302, { Location: `${RELEASES_URL}/openkcal.apk`, 'Cache-Control': 'no-cache' })
+      return res.end()
+    }
+    if (name !== 'openkcal.json') throw new HttpError(404, 'Not found')
+    if (Date.now() - latestInfo.at > 10 * 60_000) {
+      const r = await fetch(`${RELEASES_URL}/openkcal.json`, { signal: AbortSignal.timeout(8000) }).catch(() => null)
+      const body = r?.ok ? await r.text().catch(() => null) : null
+      if (body) latestInfo = { at: Date.now(), body }
+    }
+    if (!latestInfo.body) throw new HttpError(404, 'Not found')
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Cache-Control', 'no-cache')
+    return res.end(latestInfo.body)
+  }
+
   async function serveStatic(req, res, pathname) {
     if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(404, 'Not found')
     const extra = extraFile(pathname)
     if (extra) {
       const size = await stat(extra).then((s) => (s.isFile() ? s.size : -1), () => -1)
+      if (size < 0 && pathname.startsWith('/download/')) return latestRelease(res, path.basename(extra))
       if (size < 0) throw new HttpError(404, 'Not found')
       res.setHeader('Content-Type', TYPES[path.extname(extra)] || 'application/octet-stream')
       res.setHeader('Cache-Control', 'no-cache')

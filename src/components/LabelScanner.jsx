@@ -20,7 +20,9 @@ export default function LabelScanner({ onClose, onSaved, defaultMeal }) {
   const { toast } = useUI.getState()
   const user = useSync((s) => s.user)
   const [labelFile, setLabelFile] = useState(null)
+  const [labelPreview, setLabelPreview] = useState(null)
   const [itemFile, setItemFile] = useState(null)
+  const [itemPreview, setItemPreview] = useState(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
   const [parsed, setParsed] = useState(null)
@@ -51,16 +53,18 @@ export default function LabelScanner({ onClose, onSaved, defaultMeal }) {
   }
 
   const handleLabelChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files?.[0]
     if (!file) return
     setLabelFile(file)
+    setLabelPreview(URL.createObjectURL(file))
     scan(file, itemFile)
   }
 
   const handleItemChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files?.[0]
     if (!file) return
     setItemFile(file)
+    setItemPreview(URL.createObjectURL(file))
     if (labelFile) scan(labelFile, file)
   }
 
@@ -105,34 +109,90 @@ export default function LabelScanner({ onClose, onSaved, defaultMeal }) {
         Snap a photo of the nutrition label on packaging. Optionally add a photo of the food item or box front to extract the exact brand and product name.
       </p>
 
-      {/* Photo upload inputs */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+      {/* Photo upload dropzone cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div>
-          <label style={{ display: 'block', fontSize: 'var(--fs-caption)', fontWeight: 600, marginBottom: 6 }}>
-            1. Nutrition Label (Required)
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleLabelChange}
-            className="field"
-            aria-label="Photo of nutrition facts label"
-          />
+          <span style={{ display: 'block', fontSize: 'var(--fs-caption)', fontWeight: 600, marginBottom: 6, color: 'var(--label)' }}>
+            1. Nutrition Label <span style={{ color: 'var(--red)' }}>*</span>
+          </span>
+          {!labelPreview ? (
+            <label className="upload-dropzone" style={{ minHeight: 110 }}>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleLabelChange}
+                style={{ display: 'none' }}
+                aria-label="Photo of nutrition facts label"
+              />
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--acc-soft)', color: 'var(--acc-ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                <Icon name="camera" />
+              </div>
+              <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 600, color: 'var(--label)' }}>Snap Label</span>
+              <span className="muted" style={{ fontSize: 'var(--fs-caption2)' }}>Camera or Browse</span>
+            </label>
+          ) : (
+            <div className="upload-preview-box">
+              <img src={labelPreview} alt="Nutrition Label" className="upload-preview-img" style={{ height: 85 }} />
+              <div className="upload-preview-actions">
+                <span style={{ fontSize: 'var(--fs-caption2)', fontWeight: 600, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="check" size={13} /> Attached
+                </span>
+                <label className="btn sm tinted" style={{ cursor: 'pointer', padding: '2px 8px', fontSize: 'var(--fs-caption2)', margin: 0 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleLabelChange}
+                    style={{ display: 'none' }}
+                  />
+                  Retake
+                </label>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: 'var(--fs-caption)', fontWeight: 600, marginBottom: 6 }}>
-            2. Product Front (Optional)
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleItemChange}
-            className="field"
-            aria-label="Photo of product packaging front"
-          />
+          <span style={{ display: 'block', fontSize: 'var(--fs-caption)', fontWeight: 600, marginBottom: 6, color: 'var(--label)' }}>
+            2. Product Front <span className="muted">(Optional)</span>
+          </span>
+          {!itemPreview ? (
+            <label className="upload-dropzone" style={{ minHeight: 110 }}>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleItemChange}
+                style={{ display: 'none' }}
+                aria-label="Photo of product packaging front"
+              />
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-3)', color: 'var(--label-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                <Icon name="tag" />
+              </div>
+              <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 600, color: 'var(--label)' }}>Front Photo</span>
+              <span className="muted" style={{ fontSize: 'var(--fs-caption2)' }}>Detects Brand</span>
+            </label>
+          ) : (
+            <div className="upload-preview-box">
+              <img src={itemPreview} alt="Product front" className="upload-preview-img" style={{ height: 85 }} />
+              <div className="upload-preview-actions">
+                <span style={{ fontSize: 'var(--fs-caption2)', fontWeight: 600, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="check" size={13} /> Attached
+                </span>
+                <label className="btn sm tinted" style={{ cursor: 'pointer', padding: '2px 8px', fontSize: 'var(--fs-caption2)', margin: 0 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleItemChange}
+                    style={{ display: 'none' }}
+                  />
+                  Retake
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

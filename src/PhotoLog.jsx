@@ -24,10 +24,12 @@ export default function PhotoLog({ title, onAdd, onAddDish, onClose }) {
   const [items, setItems] = useState(null)
   const [dishName, setDishName] = useState('')
   const [status, setStatus] = useState('')
+  const [preview, setPreview] = useState(null)
 
   const read = async (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files?.[0]
     if (!file) return
+    setPreview(URL.createObjectURL(file))
     setStatus('Analyzing your meal plate with AI…')
     setItems(null)
     try {
@@ -97,14 +99,46 @@ export default function PhotoLog({ title, onAdd, onAddDish, onClose }) {
       </p>
 
       <div style={{ marginBottom: 14 }}>
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={read}
-          className="field"
-          aria-label="Photo of your meal"
-        />
+        {!preview ? (
+          <label className="upload-dropzone" style={{ padding: '24px 16px' }}>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={read}
+              style={{ display: 'none' }}
+              aria-label="Photo of your meal"
+            />
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--acc-soft)', color: 'var(--acc-ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+              <Icon name="camera" />
+            </div>
+            <span style={{ fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--label)', marginTop: 4 }}>
+              Take or Upload Meal Photo
+            </span>
+            <span className="muted" style={{ fontSize: 'var(--fs-caption)' }}>
+              Camera snapshot or photo from gallery
+            </span>
+          </label>
+        ) : (
+          <div className="upload-preview-box">
+            <img src={preview} alt="Meal preview" className="upload-preview-img" style={{ height: 160 }} />
+            <div className="upload-preview-actions">
+              <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 600, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Icon name="check" size={14} /> Photo Attached
+              </span>
+              <label className="btn sm tinted" style={{ cursor: 'pointer', margin: 0 }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={read}
+                  style={{ display: 'none' }}
+                />
+                Retake Photo
+              </label>
+            </div>
+          </div>
+        )}
       </div>
 
       {status && (

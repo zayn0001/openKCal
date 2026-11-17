@@ -479,6 +479,13 @@ export async function createApp({
       return ai.review(uid, b.summary)
     },
 
+    'POST /api/ai/coach': async (req, res, uid) => {
+      const b = await body(req, 20_000)
+      const prompt = str(b?.prompt, { name: 'Prompt', min: 1, max: 2000 })
+      aiLimit(uid)
+      return ai.coach(uid, { prompt, context: typeof b?.context === 'string' ? b.context.slice(0, 1000) : undefined })
+    },
+
     // ---- webhooks ----
 
     'GET /api/hooks': (req, res, uid) => hooks.list(uid),

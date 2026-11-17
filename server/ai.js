@@ -83,6 +83,14 @@ food suggestion for each. Keep it under 180 words. Days with nothing logged are 
 This is general nutrition guidance, not medical advice; if the numbers suggest very low intake, say so
 kindly and suggest speaking to a professional.`
 
+const COACH_SYSTEM = `You are openKCal AI Nutrition Coach, an encouraging, scientifically grounded nutrition and dietary advisor.
+Your recommendations should be:
+- Practical, evidence-based, and macro-aware.
+- Structured with clear bullet points and actionable portion advice.
+- Considerate of wholesome whole foods, adequate protein, hydration, fiber, and healthy balance.
+- Generic and globally applicable.
+- Direct, warm, and concise without unnecessary fluff or lecturing.`
+
 const MAX_ROUNDS = 10
 const TOO_MANY = 'The model took too many steps. Try describing the meal more simply.'
 // Consent covers a fixed list of what is sent; a new kind of data means asking again.
@@ -605,6 +613,15 @@ export async function createAi({ dataDir, key, allowLan = () => false }) {
     async review(uid, summary) {
       const { ai } = await ready(uid)
       return { text: await ai.text({ system: REVIEW_SYSTEM, prompt: JSON.stringify(summary) }) }
+    },
+
+    /** prompt + optional context -> { text } */
+    async coach(uid, { prompt, context }) {
+      const { ai } = await ready(uid)
+      const fullPrompt = context
+        ? `User daily context:\n${context}\n\nUser query:\n${prompt}`
+        : prompt
+      return { text: await ai.text({ system: COACH_SYSTEM, prompt: fullPrompt }) }
     },
   }
 }

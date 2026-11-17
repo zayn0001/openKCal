@@ -72,20 +72,25 @@ export function convertOpenGymWorkouts(workouts = [], userWeightKg = 70) {
   if (!Array.isArray(workouts)) return result
 
   for (const w of workouts) {
-    if (!w || !w.d) continue
-    const date = w.d
+    if (!w) continue
+    const dateRaw = w.d || w.date || (w.start ? new Date(w.start).toLocaleDateString('en-CA') : null)
+    if (!dateRaw) continue
+    const date = String(dateRaw).slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue
 
     // Calculate duration in minutes
     let durationMin = 45
     if (Number(w.end) > 0 && Number(w.start) > 0 && w.end > w.start) {
       durationMin = Math.max(5, Math.round((w.end - w.start) / 60000))
+    } else if (Number(w.dur) > 0) {
+      durationMin = Math.max(5, Math.round(Number(w.dur) / 60))
     }
 
     // Inspect entries/exercises
     const entries = Array.isArray(w.entries) ? w.entries : []
     const totalSets = entries.reduce((acc, e) => acc + (Array.isArray(e.sets) ? e.sets.length : 0), 0)
     const exerciseNames = entries
-      .map((e) => e.name || e.id || '')
+      .map((e) => e.name || (e.id ? String(e.id).replace(/[_-]/g, ' ') : ''))
       .filter(Boolean)
       .slice(0, 3)
       .join(', ')
@@ -96,7 +101,9 @@ export function convertOpenGymWorkouts(workouts = [], userWeightKg = 70) {
     const exercise = {
       id: `opengym_${w.id || `${date}_${w.start || Math.random().toString(36).slice(2, 7)}`}`,
       name: w.name || 'Strength Workout',
+      minutes: durationMin,
       durationMin,
+      kcal: caloriesBurned,
       caloriesBurned,
       type: isCardio ? 'cardio' : 'gym',
       source: 'openGym',
@@ -121,10 +128,17 @@ export function convertOpenGymWeights(bodyweight = [], openGymUnit = 'kg') {
   const isLb = openGymUnit === 'lb'
 
   for (const b of bodyweight) {
-    if (!b || !b.d || !(Number(b.w) > 0)) continue
-    const rawVal = Number(b.w)
-    const kg = isLb ? rawVal * 0.45359237 : rawVal
-    weights[b.d] = Math.round(kg * 10) / 10
+    if (!b) continue
+    const dateRaw = b.d || b.date || (b.t ? new Date(b.t).toLocaleDateString('en-CA') : null)
+    if (!dateRaw) continue
+    const date = String(dateRaw).slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue
+
+    const val = Number(b.w ?? b.weight ?? b.val)
+    if (!(val > 0)) continue
+
+    const kg = isLb ? val * 0.45359237 : val
+    weights[date] = Math.round(kg * 10) / 10
   }
 
   return weights
@@ -308,14 +322,15 @@ export function parseOpenGymBackup(content) {
 
   // If already an object
   if (typeof content === 'object') {
-    return content
+    return content.state || content.raw || content
   }
 
   if (typeof content === 'string') {
     const trimmed = content.trim()
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
       try {
-        return JSON.parse(trimmed)
+        const parsed = JSON.parse(trimmed)
+        return parsed.state || parsed.raw || parsed
       } catch {
         return null
       }
@@ -329,23 +344,40 @@ export function parseOpenGymBackup(content) {
 
 /**
  * Merge openGym state into openKCal store.
- * @param {object} openGymState - raw or parsed openGym state
+ * @param {object} openGymState - raw or parsed openGym state (supports { state: {...}, rev } API shape)
  * @param {object} store - Zustand useStore or store methods
  * @returns {object} Sync result statistics
  */
 export function syncOpenGymData(openGymState, store) {
   if (!openGymState || !store) return { success: false, error: 'No data or store' }
 
-  const state = openGymState.raw || openGymState
+  // Unpack nested response: openGym API returns { state: { workouts, bodyweight, ... }, rev }
+  const state = openGymState.state || openGymState.raw || openGymState
   const currentWeights = store.weights || {}
   const latestKg = Object.keys(currentWeights).sort().at(-1)
     ? currentWeights[Object.keys(currentWeights).sort().at(-1)]
     : store.profile?.weightKg || 70
 
-  const unit = state.unit || 'kg'
-  const newWeights = convertOpenGymWeights(state.bodyweight || [], unit)
-  const newExercises = convertOpenGymWorkouts(state.workouts || [], latestKg)
-  const newMeasurements = convertOpenGymMeasurements(state.measurements || [])
+  const unit = state.unit || state.settings?.unit || 'kg'
+  const workoutsList = Array.isArray(state.workouts)
+    ? state.workouts
+    : Array.isArray(state.history)
+    ? state.history
+    : Array.isArray(state.sessions)
+    ? state.sessions
+    : []
+  const bwList = Array.isArray(state.bodyweight)
+    ? state.bodyweight
+    : Array.isArray(state.weighIns)
+    ? state.weighIns
+    : Array.isArray(state.weights)
+    ? state.weights
+    : []
+  const measurementsList = Array.isArray(state.measurements) ? state.measurements : []
+
+  const newWeights = convertOpenGymWeights(bwList, unit)
+  const newExercises = convertOpenGymWorkouts(workoutsList, latestKg)
+  const newMeasurements = convertOpenGymMeasurements(measurementsList)
 
   let workoutsAdded = 0
   let weightsAdded = 0
@@ -390,6 +422,9 @@ export function syncOpenGymData(openGymState, store) {
     updatedProfile.sex = state.body
   }
 
+  const totalOpenGymWorkouts = Object.values(updatedExercises).flat().filter((e) => e.source === 'openGym').length
+  const totalWeightsCount = Object.keys(updatedWeights).length
+
   // Update store in one state transition
   store.setOpenGymSync({
     weights: updatedWeights,
@@ -398,8 +433,8 @@ export function syncOpenGymData(openGymState, store) {
     profile: updatedProfile,
     syncStats: {
       lastSync: Date.now(),
-      workoutsCount: Object.values(updatedExercises).flat().filter((e) => e.source === 'openGym').length,
-      weightsCount: Object.keys(updatedWeights).length,
+      workoutsCount: totalOpenGymWorkouts,
+      weightsCount: totalWeightsCount,
     },
   })
 
@@ -408,8 +443,8 @@ export function syncOpenGymData(openGymState, store) {
     workoutsAdded,
     weightsAdded,
     measurementsAdded,
-    totalWorkouts: (state.workouts || []).length,
-    totalWeights: (state.bodyweight || []).length,
+    totalWorkouts: workoutsList.length,
+    totalWeights: bwList.length,
   }
 }
 
@@ -503,13 +538,15 @@ export async function checkRemoteRevision(serverUrl, token) {
 
 /**
  * Downloads the full user state from openGym server.
+ * Handles both wrapped API response { state: {...}, rev } and direct state object.
  */
 export async function fetchRemoteState(serverUrl, token) {
   const res = await fetch(`${serverUrl}/api/data`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error(`Failed to fetch openGym data: HTTP ${res.status}`)
-  return await res.json()
+  const data = await res.json()
+  return data?.state || data
 }
 
 /**
@@ -524,7 +561,12 @@ export async function syncRemoteOpenGym(store, forced = false) {
 
   try {
     const latestRev = await checkRemoteRevision(remote.serverUrl, remote.token)
-    if (!forced && latestRev && remote.lastRev && latestRev === remote.lastRev) {
+    const existingWorkoutsCount = Object.values(store.exercises || {}).flat().filter((e) => e.source === 'openGym').length
+    const existingWeightsCount = Object.keys(store.weights || {}).length
+    const hasData = existingWorkoutsCount > 0 || existingWeightsCount > 0
+
+    // Skip network payload only if not forced, already has data, and revision hasn't moved
+    if (!forced && hasData && latestRev && remote.lastRev && String(latestRev) === String(remote.lastRev)) {
       return { success: true, updated: false, rev: latestRev }
     }
 
@@ -532,14 +574,14 @@ export async function syncRemoteOpenGym(store, forced = false) {
     const stats = syncOpenGymData(remoteData, store)
 
     store.setOpenGymRemote({
-      lastRev: latestRev || Date.now().toString(),
+      lastRev: (latestRev ?? remoteData?.rev ?? Date.now()).toString(),
       lastSync: Date.now(),
     })
 
     return {
       success: true,
       updated: true,
-      rev: latestRev,
+      rev: latestRev ?? remoteData?.rev ?? remote.lastRev,
       stats,
     }
   } catch (err) {

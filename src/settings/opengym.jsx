@@ -16,6 +16,7 @@ export function OpenGymPage() {
   const store = useStore()
   const toast = useUI((s) => s.toast)
   const openGymRemote = useStore((s) => s.openGymRemote) || {}
+  const openGymSync = useStore((s) => s.openGymSync) || {}
   const [detection, setDetection] = useState(() => detectOpenGym())
   const [syncing, setSyncing] = useState(false)
   const [connecting, setConnecting] = useState(false)
@@ -55,7 +56,9 @@ export function OpenGymPage() {
       // Run initial sync immediately
       const syncRes = await syncRemoteOpenGym(useStore.getState(), true)
       if (syncRes.success) {
-        toast(`Connected to openGym! Synced ${syncRes.stats?.workoutsAdded || 0} workouts and ${syncRes.stats?.weightsAdded || 0} weigh-ins.`)
+        const wCount = syncRes.stats?.totalWorkouts || syncRes.stats?.workoutsAdded || 0
+        const wtCount = syncRes.stats?.totalWeights || syncRes.stats?.weightsAdded || 0
+        toast(`Connected to openGym! Synced ${wCount} workouts and ${wtCount} weigh-ins.`)
       } else {
         toast(`Connected to openGym as ${res.user?.name || 'User'}!`)
       }
@@ -90,7 +93,8 @@ export function OpenGymPage() {
 
       // Initial sync
       const syncRes = await syncRemoteOpenGym(useStore.getState(), true)
-      toast(`Connected with token! Synced ${syncRes.stats?.workoutsAdded || 0} workouts.`)
+      const wCount = syncRes.stats?.totalWorkouts || syncRes.stats?.workoutsAdded || 0
+      toast(`Connected with token! Synced ${wCount} workouts.`)
       setBearerToken('')
     } catch (err) {
       toast(`Token verification failed: ${err.message}`, { kind: 'error' })
@@ -106,7 +110,11 @@ export function OpenGymPage() {
       const res = await syncRemoteOpenGym(useStore.getState(), true)
       if (res.success) {
         if (res.updated) {
-          toast(`Synced with openGym: +${res.stats?.workoutsAdded || 0} workouts, +${res.stats?.weightsAdded || 0} weigh-ins.`)
+          const wTotal = res.stats?.totalWorkouts || res.stats?.workoutsAdded || 0
+          const wtTotal = res.stats?.totalWeights || res.stats?.weightsAdded || 0
+          const wNew = res.stats?.workoutsAdded || 0
+          const wtNew = res.stats?.weightsAdded || 0
+          toast(`Synced with openGym: ${wTotal} workouts (${wNew} new), ${wtTotal} weigh-ins (${wtNew} new).`)
         } else {
           toast('openGym is already up to date.')
         }
@@ -259,6 +267,12 @@ export function OpenGymPage() {
               {openGymRemote.user?.name && (
                 <div>Account: <strong style={{ color: 'var(--text)' }}>{openGymRemote.user.name}</strong></div>
               )}
+              <div>
+                Synced Data:{' '}
+                <strong style={{ color: 'var(--lime)' }}>
+                  {openGymSync?.syncStats?.workoutsCount ?? 0} workouts · {openGymSync?.syncStats?.weightsCount ?? 0} weigh-ins
+                </strong>
+              </div>
               <div>Last Synced: <span>{formatLastSync(openGymRemote.lastSync)}</span></div>
               {openGymRemote.lastRev && (
                 <div>Revision: <code style={{ fontSize: 11 }}>{openGymRemote.lastRev}</code></div>

@@ -9,6 +9,7 @@ import {
   normalizeServerUrl,
   parseOpenGymCsv,
   redeemPairingCode,
+  syncOpenGymData,
   syncRemoteOpenGym,
 } from './opengym.js'
 
@@ -228,4 +229,49 @@ test('redeemPairingCode and syncRemoteOpenGym work with mock openGym server', as
   } finally {
     server.close()
   }
+})
+
+test('syncOpenGymData correctly unpacks wrapped openGym API response { state: {...}, rev: 400 }', () => {
+  const wrappedResponse = {
+    state: {
+      unit: 'kg',
+      workouts: [
+        {
+          id: 'w400',
+          d: '2026-11-17',
+          name: 'Chest & Back',
+          start: 1731837600000,
+          end: 1731841200000,
+          entries: [{ id: 'barbell_bench_press', sets: [{ w: 90, r: 8 }] }],
+        },
+      ],
+      bodyweight: [{ d: '2026-11-17', w: 76.2 }],
+      measurements: [{ d: '2026-11-17', waist: 81 }],
+    },
+    rev: 400,
+  }
+
+  const mockStore = {
+    weights: {},
+    exercises: {},
+    measurements: {},
+    profile: { weightKg: 75 },
+    setOpenGymSync: (syncObj) => {
+      mockStore.weights = syncObj.weights
+      mockStore.exercises = syncObj.exercises
+      mockStore.measurements = syncObj.measurements
+    },
+  }
+
+  const stats = syncOpenGymData(wrappedResponse, mockStore)
+  assert.equal(stats.success, true)
+  assert.equal(stats.workoutsAdded, 1)
+  assert.equal(stats.weightsAdded, 1)
+  assert.equal(stats.totalWorkouts, 1)
+  assert.equal(stats.totalWeights, 1)
+  assert.equal(mockStore.weights['2026-11-17'], 76.2)
+  assert.ok(mockStore.exercises['2026-11-17'])
+  assert.equal(mockStore.exercises['2026-11-17'][0].name, 'Chest & Back')
+  assert.equal(mockStore.exercises['2026-11-17'][0].kcal, 433)
+  assert.equal(mockStore.measurements['2026-11-17'].waist, 81)
 })

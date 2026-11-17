@@ -350,6 +350,13 @@ button.card, .button.card {
   border: var(--hair) solid var(--raised-line);
   display: block;
 }
+.user-profile-card, button.user-profile-card {
+  background: var(--surface) !important;
+  color: var(--label) !important;
+}
+.user-profile-card:hover, button.user-profile-card:hover {
+  background: var(--surface-2) !important;
+}
 .card.tappable {
   cursor: pointer;
   transition: transform var(--fast) var(--ease), background var(--fast), box-shadow var(--fast);

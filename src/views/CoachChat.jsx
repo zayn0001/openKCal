@@ -7,7 +7,7 @@ import { scale, sum } from '../lib/nutrition'
 import { remainingKcal } from '../lib/targets'
 import { dayTargets, today, useStore } from '../store'
 import { useUI } from '../store/useUI'
-import { api, useSync } from '../sync'
+import { useSync } from '../sync'
 
 const QUICK_PROMPTS = [
   'What should I eat with my remaining calories today?',
@@ -176,7 +176,22 @@ How can I help you right now?
 How can I best assist you?
 • Ask for meal or snack suggestions tailored to your remaining calories
 • Ask how to hit your protein target or reduce bloating
-• Or tap **Photo Food → AI Dish** or **Scan Label (OCR)** to log foods with your camera!`
+• Or tap **Photo Food → AI Dish** or **Scan Label (OCR)** to log foods with your camera!
+
+_These are built-in answers. Connect an AI provider in Settings → AI to ask anything and have a real conversation._`
+}
+
+// Asks the server's coach; throws the server's own message when it fails.
+async function askCoach(body, signal) {
+  const res = await fetch('/api/ai/coach', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(data?.error || `The server answered ${res.status}`)
+  return String(data?.text || '').trim()
 }
 
 export default function CoachChat() {
@@ -210,26 +225,28 @@ export default function CoachChat() {
     if (!text || busy) return
     setInput('')
 
+    // The turns before this one, so follow-ups keep their meaning
+    const history = coachChat.slice(-10).map(({ role, text }) => ({ role, text }))
     addCoachMessage({ role: 'user', text })
+
+    if (!aiReady) {
+      addCoachMessage({ role: 'coach', text: getLocalAdvice(text, eaten, remaining, profile) })
+      return
+    }
+
     setBusy(true)
-
+    const context = `Eaten today: ${Math.round(eaten.kcal)} kcal (${Math.round(eaten.protein)}g protein, ${Math.round(eaten.carbs)}g carbs, ${Math.round(eaten.fat)}g fat). Daily target: ${targetKcal} kcal. Burned by exercise: ${Math.round(burned)} kcal. Remaining: ${remaining} kcal (use this exact number). Goal: ${profile?.goal || 'hold'}.`
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 120_000)
     try {
-      if (aiReady) {
-        const context = `Eaten today: ${Math.round(eaten.kcal)} kcal (${Math.round(eaten.protein)}g protein, ${Math.round(eaten.carbs)}g carbs, ${Math.round(eaten.fat)}g fat). Daily target: ${targetKcal} kcal. Burned by exercise: ${Math.round(burned)} kcal. Remaining: ${remaining} kcal (use this exact number). Goal: ${profile?.goal || 'hold'}.`
-        const r = await api('POST', '/api/ai/coach', { prompt: text, context }).catch(() => null)
-
-        if (r?.ok && r.body?.text) {
-          addCoachMessage({ role: 'coach', text: r.body.text })
-          setBusy(false)
-          return
-        }
-      }
-
-      // Smart local fallback advice
-      addCoachMessage({ role: 'coach', text: getLocalAdvice(text, eaten, remaining, profile) })
-      setBusy(false)
-    } catch {
-      addCoachMessage({ role: 'coach', text: getLocalAdvice(text, eaten, remaining, profile) })
+      const answer = await askCoach({ prompt: text, context, history }, ctrl.signal)
+      addCoachMessage({ role: 'coach', text: answer || 'Your AI sent back an empty answer. Try asking again.' })
+    } catch (e) {
+      // Say what went wrong instead of passing off a canned answer as the AI's
+      const why = e.name === 'AbortError' ? 'It took longer than 2 minutes.' : e.message
+      addCoachMessage({ role: 'coach', text: `**Could not get an answer from your AI.** ${why}\n\nCheck Settings → AI, then try again.` })
+    } finally {
+      clearTimeout(timer)
       setBusy(false)
     }
   }
@@ -375,7 +392,7 @@ export default function CoachChat() {
 
         {busy && (
           <div className="chat-msg coach">
-            <span className="muted">Thinking & formulating recommendations…</span>
+            <span className="muted">Thinking…</span>
           </div>
         )}
 

@@ -91,6 +91,7 @@ Your recommendations should be:
 - Generic and globally applicable.
 - Direct, warm, and concise without unnecessary fluff or lecturing.
 - Short: answer in under 120 words, at most 3-4 bullets, no preamble or recap, unless the user asks for detail.
+- Conversational: this is an ongoing chat. Read the conversation so far and answer the new message in that light; follow-ups like "what about dinner?" or "make it vegetarian" refer to what was just discussed. Answer any food, nutrition or fitness question directly, never with a generic overview.
 When the user's daily context gives calorie or macro numbers, quote them exactly as given; never recompute or estimate your own.`
 
 const MAX_ROUNDS = 10
@@ -378,6 +379,9 @@ function geminiAdapter({ key, model, base }) {
   const label = 'Google Gemini'
   // The key goes in a header, never in ?key=, so it stays out of logs and error messages.
   const headers = { 'x-goog-api-key': key, 'content-type': 'application/json' }
+  // Gemini 3+ thinks before answering by default; chat asks for little of it.
+  // ponytail: 2.5 models take thinkingBudget instead, with per-model limits; left at their default.
+  const thinking = (effort) => (effort === 'low' && /^gemini-([3-9]|\d\d)/.test(model) ? { thinkingConfig: { thinkingLevel: 'low' } } : {})
   const run = async (job, json, jsonShape) => {
     const imgs = Array.isArray(job.images) ? job.images : job.image ? [job.image] : []
     const parts = [{ text: job.prompt }, ...imgs.map((img) => ({ inline_data: { mime_type: 'image/jpeg', data: img } }))]
@@ -390,7 +394,7 @@ function geminiAdapter({ key, model, base }) {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: json ? `${job.system}\n\n${shape}` : job.system }] },
           contents: [{ role: 'user', parts }],
-          generationConfig: { maxOutputTokens: 16000, ...(json && { responseMimeType: 'application/json' }) },
+          generationConfig: { maxOutputTokens: 16000, ...thinking(job.effort), ...(json && { responseMimeType: 'application/json' }) },
         }),
       },
       label,
@@ -618,11 +622,17 @@ export async function createAi({ dataDir, key, allowLan = () => false }) {
     },
 
     /** prompt + optional context -> { text } */
-    async coach(uid, { prompt, context }) {
+    // history: earlier turns [{ role: 'user'|'coach', text }], oldest first, so follow-ups keep their meaning.
+    async coach(uid, { prompt, context, history = [] }) {
       const { ai } = await ready(uid)
-      const fullPrompt = context
-        ? `User daily context:\n${context}\n\nUser query:\n${prompt}`
-        : prompt
+      const transcript = history.map((m) => `${m.role === 'user' ? 'User' : 'Coach'}: ${m.text}`).join('\n\n')
+      const fullPrompt = [
+        context && `User daily context:\n${context}`,
+        transcript && `Conversation so far:\n${transcript}`,
+        `User's new message:\n${prompt}`,
+      ]
+        .filter(Boolean)
+        .join('\n\n')
       // Chat should feel instant: low effort means little thinking before the reply.
       return { text: await ai.text({ system: COACH_SYSTEM, prompt: fullPrompt, effort: 'low' }) }
     },

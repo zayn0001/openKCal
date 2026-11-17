@@ -480,10 +480,14 @@ export async function createApp({
     },
 
     'POST /api/ai/coach': async (req, res, uid) => {
-      const b = await body(req, 20_000)
+      const b = await body(req, 40_000)
       const prompt = str(b?.prompt, { name: 'Prompt', min: 1, max: 2000 })
+      const history = (Array.isArray(b?.history) ? b.history : [])
+        .filter((m) => (m?.role === 'user' || m?.role === 'coach') && typeof m.text === 'string' && m.text.trim())
+        .slice(-10)
+        .map((m) => ({ role: m.role, text: m.text.slice(0, 1500) }))
       aiLimit(uid)
-      return ai.coach(uid, { prompt, context: typeof b?.context === 'string' ? b.context.slice(0, 1000) : undefined })
+      return ai.coach(uid, { prompt, context: typeof b?.context === 'string' ? b.context.slice(0, 1000) : undefined, history })
     },
 
     // ---- webhooks ----

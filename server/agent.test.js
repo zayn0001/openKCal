@@ -113,3 +113,34 @@ test('the agent searches, then proposes; nothing is saved by the server', async 
   assert.equal((await me('GET', '/api/state')).body.state.foods.length, 1)
   assert.equal((await me('POST', '/api/ai/describe', { text: 'x' })).status, 400) // too short
 })
+
+test('coach sends the conversation so far and returns the answer', async (t) => {
+  let asked
+  const stub = createServer(async (req, res) => {
+    let raw = ''
+    for await (const c of req) raw += c
+    asked = JSON.parse(raw)
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: ' Try paneer. ' } }] }))
+  })
+  const stubUrl = await listen(stub)
+  t.after(() => stub.close())
+  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thally-')), pushTickMs: 0 })
+  const base = await listen(app)
+  t.after(() => app.close())
+  const me = client(base)
+  await me('POST', '/api/signup', { name: 'mira', password: randomBytes(12).toString('hex') })
+  await me('POST', '/api/ai', { provider: 'compatible', baseUrl: stubUrl, model: 'local', consent: true })
+  const r = await me('POST', '/api/ai/coach', {
+    prompt: 'make it vegetarian',
+    context: 'Remaining: 600 kcal',
+    history: [{ role: 'user', text: 'dinner ideas?' }, { role: 'coach', text: 'Chicken and rice.' }, { role: 'system', text: 'ignored' }],
+  })
+  assert.equal(r.status, 200)
+  assert.equal(r.body.text, 'Try paneer.')
+  const prompt = asked.messages.at(-1).content
+  assert.match(prompt, /Remaining: 600 kcal/)
+  assert.match(prompt, /User: dinner ideas\?\n\nCoach: Chicken and rice\./)
+  assert.doesNotMatch(prompt, /ignored/)
+  assert.match(prompt, /new message:\nmake it vegetarian$/)
+})

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ACCENTS, MODULES, PRESETS, presetOf } from '../lib/settings'
+import { MODULES, PRESETS, presetOf } from '../lib/settings'
 import { ACTIVITY, GOAL, targets } from '../lib/targets'
 import { fmtEnergy, heightFromCm, heightToCm, weightFromKg, weightToKg } from '../lib/units'
 import { latestWeight, useSettings, useStore } from '../store'
@@ -145,17 +145,41 @@ export function UnitsPage() {
   )
 }
 
+export const PALETTE = ['lime', 'sky', 'orange', 'violet', 'pink', 'red', 'teal', 'gold']
+export const PALETTE_COLORS = {
+  lime: '#30d158',
+  sky: '#0a84ff',
+  orange: '#ff9f0a',
+  violet: '#bf5af2',
+  pink: '#ff375f',
+  red: '#ff453a',
+  teal: '#40c8e0',
+  gold: '#ffd60a',
+  green: '#30d158',
+  blue: '#0a84ff',
+  purple: '#bf5af2',
+}
+
 export function LookPage() {
   const { look } = useSettings()
   const set = (patch) => useStore.getState().setSettings('look', { ...look, ...patch })
   return (
     <section className="card">
       <Segmented label="Theme" value={look.theme} options={[['system', 'System'], ['light', 'Light'], ['dark', 'Dark']]} onChange={(theme) => set({ theme })} />
-      <div className="setting">
-        <span>Accent colour</span>
+      <div className="setting" style={{ marginTop: 12 }}>
+        <span style={{ fontWeight: 600 }}>Accent colour</span>
         <div className="swatches" role="radiogroup" aria-label="Accent colour">
-          {ACCENTS.map((a) => (
-            <button key={a} type="button" role="radio" aria-checked={look.accent === a} aria-label={a} className={`swatch ${a}`} onClick={() => set({ accent: a })} />
+          {PALETTE.map((a) => (
+            <button
+              key={a}
+              type="button"
+              role="radio"
+              aria-checked={look.accent === a || (look.accent === 'green' && a === 'lime') || (look.accent === 'blue' && a === 'sky') || (look.accent === 'purple' && a === 'violet')}
+              aria-label={a}
+              className={`swatch ${a}`}
+              style={{ backgroundColor: PALETTE_COLORS[a] }}
+              onClick={() => set({ accent: a })}
+            />
           ))}
         </div>
       </div>
@@ -169,7 +193,7 @@ export function ModulesPage() {
   const preset = presetOf(modules)
   return (
     <section className="card">
-      <p className="muted">Switch whole parts of Thally off to keep it simple. Nothing is deleted: switch one back on and everything is where it was.</p>
+      <p className="muted">Switch whole parts of openKCal off to keep it simple. Nothing is deleted: switch one back on and everything is where it was.</p>
       <Segmented
         label="Preset"
         value={preset}
@@ -190,22 +214,32 @@ export function AboutPage() {
   return (
     <section className="card">
       <p>
-        <strong>Thally</strong> {import.meta.env.VITE_VERSION || ''} — a thali you can tally.
+        <strong>openKCal</strong> {import.meta.env.VITE_VERSION || 'v0.3.0'} — The open-source nutrition, calorie, and macro companion to openGym.
       </p>
-      <p className="muted">{server ? `Connected to a Thally server, version ${server.version}.` : 'Running on its own in this browser.'}</p>
+      <p className="muted">{server ? `Connected to an openKCal server, version ${server.version}.` : 'Running locally in this browser (local-first).'}</p>
       <p className="muted">Install it: {install}.</p>
-      {server && (
-        <p>
-          <a href="/welcome#get">Get the Android app</a>
-        </p>
-      )}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '14px 0' }}>
+        <button
+          type="button"
+          className="btn sm tinted"
+          onClick={() => {
+            window.location.hash = '#welcome'
+            window.dispatchEvent(new Event('popstate'))
+          }}
+        >
+          Welcome Guide & Features
+        </button>
+        <a href="/download/openkcal.apk" download className="btn sm primary" style={{ textDecoration: 'none' }}>
+          Download Android APK
+        </a>
+      </div>
       <h3>Food data</h3>
       <ul className="plain">
         <li>Indian Food Composition Tables 2017, National Institute of Nutrition (ICMR). Copyright NIN.</li>
         <li>USDA Food and Nutrient Database for Dietary Studies 2021–2023. Public domain.</li>
         <li>Open Food Facts, for barcodes. Open Database Licence.</li>
       </ul>
-      <p className="muted">Account, admin and integration features follow openGym by Duarte Santos.</p>
+      <p className="muted">Designed in harmony with openGym by Duarte Santos.</p>
       <p className="muted">Targets and AI answers are estimates, not medical advice.</p>
     </section>
   )

@@ -1,29 +1,31 @@
 import { useState } from 'react'
-import Dialog from '../Dialog'
+import Icon from '../components/Icon'
+import CalorieRing from '../components/CalorieRing'
+import WaterTracker from '../components/WaterTracker'
+import FastingTracker from '../components/FastingTracker'
+import ExerciseTracker from '../components/ExerciseTracker'
+import DietQualityScore from '../components/DietQualityScore'
+import QuickAddModal from '../components/QuickAddModal'
 import DescribeMeal from '../DescribeMeal'
 import DishBuilder from '../DishBuilder'
 import FoodPicker from '../FoodPicker'
-import { per100Of, scale, sum } from '../lib/nutrition'
-import { MEALS } from '../lib/settings'
-import { targets } from '../lib/targets'
-import { energy } from '../lib/units'
-import { shiftDate, weekSummary } from '../lib/week'
-import Nutrition from '../Nutrition'
 import PhotoLog from '../PhotoLog'
+import LabelScanner from '../components/LabelScanner'
+import Nutrition from '../Nutrition'
+import { per100Of, scale, sum } from '../lib/nutrition'
+import { targets } from '../lib/targets'
+import { shiftDate, weekSummary } from '../lib/week'
 import { latestWeight, today, useSettings, useStore } from '../store'
+import { useUI } from '../store/useUI'
 import { api, useSync } from '../sync'
 
-const MACROS = [
-  ['protein', 'Protein'],
-  ['carbs', 'Carbs'],
-  ['fat', 'Fat'],
-  ['fibre', 'Fibre'],
-]
+const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+const MEAL_SLOTS = ['Breakfast', 'Morning Snack', 'Lunch', 'Evening Snack', 'Dinner']
 
-// Weekly AI review of the seven days ending on `date`, on the person's own AI provider.
 function Review({ date, goal }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
+
   const run = async () => {
     setBusy(true)
     const summary = weekSummary(useStore.getState(), goal, date)
@@ -31,75 +33,116 @@ function Review({ date, goal }) {
     setText(r?.ok ? r.body.text : r?.body?.error || 'Could not get a review. Try again.')
     setBusy(false)
   }
+
   return (
-    <section className="card">
-      <header>
-        <h2>Weekly review</h2>
-        <button type="button" className="ghost" onClick={run} disabled={busy}>
-          {busy ? 'Thinking…' : 'Review my week'}
+    <div className="card">
+      <div className="card-head">
+        <div className="card-head-main">
+          <span className="card-head-g font-acc">
+            <Icon name="sparkles" />
+          </span>
+          <div className="card-head-t">
+            <span className="card-head-title">Weekly AI Diet Review</span>
+            <span className="card-head-sub">Insights on your last 7 days</span>
+          </div>
+        </div>
+        <button type="button" className="btn sm tinted" onClick={run} disabled={busy}>
+          {busy ? 'Analyzing…' : 'Review'}
         </button>
-      </header>
-      {text && <pre className="review">{text}</pre>}
-      {text && <p className="muted">AI-generated from your last 7 days, on your own AI provider. Not medical advice.</p>}
-    </section>
+      </div>
+      {text && <pre className="review" style={{ whiteSpace: 'pre-wrap', fontSize: 'var(--fs-subhead)', margin: '10px 0 0' }}>{text}</pre>}
+    </div>
   )
 }
 
-// One logged entry: its nutrition, and changing the amount, the meal, or deleting it.
-function EntryDetail({ date, entry, onClose }) {
+function EntryDetailSheet({ date, entry, onClose }) {
   const [grams, setGrams] = useState(Math.round(entry.grams * 10) / 10)
   const [meal, setMeal] = useState(entry.meal)
   const per100 = per100Of(entry)
   const { updateEntry, removeEntry } = useStore.getState()
+  const { toast } = useUI.getState()
+
   return (
-    <Dialog title={entry.name} onClose={onClose}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          updateEntry(date, entry.id, { meal, grams, ...scale(per100, grams) })
-          onClose()
-        }}
-      >
-        <div className="fields">
-          <label>
-            Grams
-            <input type="number" min="0.1" step="any" required value={grams} onChange={(e) => setGrams(+e.target.value)} />
-          </label>
-          <label>
-            Meal
-            <select value={meal} onChange={(e) => setMeal(e.target.value)}>
-              {MEALS.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-          </label>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        updateEntry(date, entry.id, { meal, grams, ...scale(per100, grams) })
+        toast(`Updated ${entry.name}`)
+        onClose()
+      }}
+    >
+      <h3>{entry.name}</h3>
+
+      <div className="sect-b">
+        <div className="lrow">
+          <span className="lrow-m">
+            <span className="lrow-t">Serving weight</span>
+            <span className="lrow-s">Grams</span>
+          </span>
+          <input
+            type="number"
+            min="0.1"
+            step="any"
+            required
+            className="num"
+            value={grams}
+            style={{ width: '80px', textAlign: 'right' }}
+            onChange={(e) => setGrams(+e.target.value)}
+          />
         </div>
+
+        <div className="lrow">
+          <span className="lrow-m">
+            <span className="lrow-t">Meal Slot</span>
+          </span>
+          <select value={meal} onChange={(e) => setMeal(e.target.value)} className="activity-select">
+            {MEAL_SLOTS.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ margin: '14px 0' }}>
         <Nutrition per100={per100} grams={grams || 0} />
-        <div className="actions">
-          <button
-            type="button"
-            className="ghost danger"
-            onClick={() => {
-              removeEntry(date, entry.id)
-              onClose()
-            }}
-          >
-            Delete
-          </button>
-          <button disabled={grams === Math.round(entry.grams * 10) / 10 && meal === entry.meal}>Save</button>
-        </div>
-      </form>
-    </Dialog>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+        <button
+          type="button"
+          className="btn danger"
+          style={{ flex: 1 }}
+          onClick={() => {
+            removeEntry(date, entry.id)
+            toast(`Removed ${entry.name}`, {
+              action: 'Undo',
+              onAction: () => useStore.getState().addEntry(date, entry),
+            })
+            onClose()
+          }}
+        >
+          <Icon name="trash" /> Delete
+        </button>
+        <button type="submit" className="btn primary" style={{ flex: 2 }}>
+          Save Changes
+        </button>
+      </div>
+    </form>
   )
 }
 
-export default function Diary({ goSettings }) {
+export default function Diary() {
   const [date, setDate] = useState(today)
-  const [addTo, setAddTo] = useState(null) // meal the picker is open for
-  const [photoTo, setPhotoTo] = useState(null) // meal the photo dialog is open for
-  const [open, setOpen] = useState(null) // entry whose detail is showing
-  const [dishFrom, setDishFrom] = useState(null) // meal being saved as a dish
+  const [addTo, setAddTo] = useState(null)
+  const [photoTo, setPhotoTo] = useState(null)
+  const [labelTo, setLabelTo] = useState(null)
+  const [quickAddTo, setQuickAddTo] = useState(null)
+  const [dishFrom, setDishFrom] = useState(null)
   const [describing, setDescribing] = useState(false)
+  const [showNutrients, setShowNutrients] = useState(false)
+
   const { units, modules } = useSettings()
   const user = useSync((s) => s.user)
   const aiReady = modules.ai && !!user?.ai?.ready
@@ -107,168 +150,358 @@ export default function Diary({ goSettings }) {
   const weights = useStore((s) => s.weights)
   const entries = useStore((s) => s.diary[date]) || []
   const glasses = useStore((s) => s.water[date]) || 0
+  const exercises = useStore((s) => s.exercises?.[date]) || []
+  const burnedKcal = exercises.reduce((acc, x) => acc + (x.kcal || 0), 0)
+
   const { addEntry, removeEntry, addWater } = useStore.getState()
-  const kcal = (v) => Math.round(energy(v, units.energy))
+  const { openSheet, toast } = useUI.getState()
 
   const eaten = sum(entries)
   const goal = profile && targets({ ...profile, weightKg: latestWeight(weights) ?? profile.weightKg })
 
+  // Calculate dates for week scrubber
+  const curDateObj = new Date(date + 'T12:00:00')
+  const weekStart = new Date(curDateObj)
+  weekStart.setDate(curDateObj.getDate() - curDateObj.getDay())
+  const weekDays = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(weekStart)
+    d.setDate(weekStart.getDate() + i)
+    const iso = d.toLocaleDateString('en-CA')
+    return {
+      iso,
+      dayNum: d.getDate(),
+      dayName: DAYS[d.getDay()],
+      isCur: iso === date,
+      isToday: iso === today(),
+    }
+  })
+
+  // Group entries by meal slot
+  const mealGroups = {}
+  for (const slot of MEAL_SLOTS) mealGroups[slot] = []
+  for (const e of entries) {
+    const m = e.meal === 'Snack' ? 'Morning Snack' : e.meal
+    if (!mealGroups[m]) mealGroups[m] = []
+    mealGroups[m].push(e)
+  }
+
+  const handleRemove = (e) => {
+    removeEntry(date, e.id)
+    toast(`Removed ${e.name}`, {
+      action: 'Undo',
+      onAction: () => addEntry(date, e),
+    })
+  }
+
   return (
     <>
-      <nav className="datebar">
-        <button type="button" className="ghost" onClick={() => setDate(shiftDate(date, -1))} aria-label="Previous day">
-          ‹
-        </button>
-        <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Date" />
-        <button type="button" className="ghost" onClick={() => setDate(shiftDate(date, 1))} aria-label="Next day">
-          ›
-        </button>
-      </nav>
-
-      <section className="card">
-        <p className="big">
-          {kcal(eaten.kcal)}
-          <small>{goal ? ` / ${kcal(goal.kcal)} ${units.energy}` : ` ${units.energy}`}</small>
-        </p>
-        {goal ? (
-          <>
-            <progress value={eaten.kcal} max={goal.kcal} aria-label="Energy against target" />
-            <div className="macros">
-              {MACROS.map(([k, label]) => (
-                <label key={k}>
-                  {label}
-                  <progress value={eaten[k]} max={goal[k]} />
-                  <small>
-                    {Math.round(eaten[k])} / {goal[k]} g
-                  </small>
-                </label>
-              ))}
-            </div>
-          </>
-        ) : (
-          <button type="button" className="ghost" onClick={goSettings}>
-            Set up your profile to get daily targets
+      {/* Top Header Bar */}
+      <div className="date-header-wrap">
+        <div className="datebar">
+          <button
+            type="button"
+            className="iconbtn"
+            onClick={() => setDate(shiftDate(date, -1))}
+            aria-label="Previous day"
+          >
+            <Icon name="chevronLeft" />
           </button>
-        )}
-        {entries.length > 0 && (
-          <details>
-            <summary>All nutrients for this day</summary>
-            <Nutrition totals={eaten} known={eaten.known} amountLabel="Total" />
-          </details>
-        )}
-      </section>
+          <span className="date-title">
+            {date === today() ? 'Today' : curDateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+          </span>
+          <button
+            type="button"
+            className="iconbtn"
+            onClick={() => setDate(shiftDate(date, 1))}
+            aria-label="Next day"
+          >
+            <Icon name="chevronRight" />
+          </button>
+        </div>
 
+        {/* 7-Day Scrubber Strip */}
+        <div className="week-strip">
+          {weekDays.map((wd) => (
+            <div
+              key={wd.iso}
+              className={'wday' + (wd.isCur ? ' today' : '')}
+              onClick={() => setDate(wd.iso)}
+            >
+              <span className="lbl">{wd.dayName}</span>
+              <span className="num">{wd.dayNum}</span>
+              <div className={'dot' + (useStore.getState().diary[wd.iso]?.length ? ' done' : '')} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Calorie & Macro Dashboard Gauge */}
+      <CalorieRing eaten={eaten} goal={goal} burned={burnedKcal} units={units} />
+
+      {/* AI Voice & Natural Language Logging Banner */}
       {aiReady && (
-        <button type="button" className="card describe" onClick={() => setDescribing(true)}>
-          <strong>🎤 Tell Thally what you ate</strong>
-          <small>Say or type it, like “two rotis and a bowl of dal”. You check everything before it’s logged.</small>
+        <button
+          type="button"
+          className="card tappable"
+          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14 }}
+          onClick={() => setDescribing(true)}
+        >
+          <span className="card-head-g font-acc" style={{ fontSize: 20 }}>
+            <Icon name="chat" />
+          </span>
+          <div style={{ flex: 1, textAlign: 'start' }}>
+            <span style={{ fontSize: 'var(--fs-body)', fontWeight: 600, display: 'block' }}>
+              Describe meal to openKCal
+            </span>
+            <span className="muted">Voice or natural text e.g. “2 rotis with dal tadka”</span>
+          </div>
+          <Icon name="chevronRight" className="lrow-c" />
         </button>
       )}
 
-      {MEALS.map((meal) => {
-        const items = entries.filter((e) => e.meal === meal)
+      {/* Meal Slots (Breakfast, Morning Snack, Lunch, Evening Snack, Dinner) */}
+      {MEAL_SLOTS.map((slot) => {
+        const items = mealGroups[slot] || []
+        const slotKcal = Math.round(sum(items).kcal || 0)
+
         return (
-          <section className="card" key={meal}>
-            <header>
-              <h2>{meal}</h2>
-              <small>
-                {kcal(sum(items).kcal)} {units.energy}
-              </small>
-              {aiReady && (
-                <button type="button" className="ghost" onClick={() => setPhotoTo(meal)}>
-                  Photo
+          <div key={slot} className="card meal-card">
+            <div className="meal-header">
+              <div className="meal-head-left">
+                <h3 className="meal-name">{slot}</h3>
+                {slotKcal > 0 && <span className="meal-kcal-badge">{slotKcal} kcal</span>}
+              </div>
+              <div className="meal-actions">
+                {aiReady && (
+                  <>
+                    <button
+                      type="button"
+                      className="iconbtn"
+                      style={{ width: 30, height: 30, fontSize: 14 }}
+                      onClick={() => setPhotoTo(slot)}
+                      title="AI Photo Meal Recognition"
+                      aria-label={`Snap photo for ${slot}`}
+                    >
+                      <Icon name="camera" />
+                    </button>
+                    <button
+                      type="button"
+                      className="iconbtn"
+                      style={{ width: 30, height: 30, fontSize: 14 }}
+                      onClick={() => setLabelTo(slot)}
+                      title="Scan Food Nutrition Label"
+                      aria-label={`Scan food label for ${slot}`}
+                    >
+                      <Icon name="barcode" />
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="iconbtn"
+                  style={{ width: 30, height: 30, fontSize: 14 }}
+                  onClick={() => setQuickAddTo(slot)}
+                  aria-label={`Quick add calories to ${slot}`}
+                >
+                  <Icon name="bolt" />
                 </button>
-              )}
-              <button type="button" onClick={() => setAddTo(meal)}>
-                + Add
-              </button>
-            </header>
-            <ul className="list">
-              {items.map((e) => (
-                <li key={e.id} className="row">
-                  <button type="button" className="row inline" onClick={() => setOpen(e)}>
-                    <span>
-                      {e.name} <small>{Math.round(e.grams)} g</small>
-                    </span>
-                    <small>
-                      {kcal(e.kcal)} {units.energy}
-                    </small>
-                  </button>
-                  <button type="button" className="ghost" onClick={() => removeEntry(date, e.id)} aria-label={`Remove ${e.name}`}>
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {items.length > 1 && (
-              <div className="actions start">
-                <button type="button" className="link" onClick={() => setDishFrom(items)}>
-                  Save this {meal.toLowerCase()} as a dish
+                <button
+                  type="button"
+                  className="btn sm tinted"
+                  onClick={() => setAddTo(slot)}
+                >
+                  <Icon name="plus" /> Add
                 </button>
               </div>
+            </div>
+
+            {items.length > 0 ? (
+              <div className="meal-items">
+                {items.map((it) => (
+                  <div key={it.id} className="food-item-row">
+                    <button
+                      type="button"
+                      className="food-info-btn"
+                      onClick={() =>
+                        openSheet((close) => (
+                          <EntryDetailSheet date={date} entry={it} onClose={close} />
+                        ))
+                      }
+                    >
+                      <span className="food-title">{it.name}</span>
+                      <span className="food-meta">
+                        {Math.round(it.grams)} g · P: {Math.round(it.protein || 0)}g · C: {Math.round(it.carbs || 0)}g · F: {Math.round(it.fat || 0)}g
+                      </span>
+                    </button>
+                    <div className="food-right-col">
+                      <span className="food-kcal">{Math.round(it.kcal)}</span>
+                      <button
+                        type="button"
+                        className="iconbtn"
+                        style={{ width: 26, height: 26, fontSize: 13 }}
+                        onClick={() => handleRemove(it)}
+                        aria-label={`Remove ${it.name}`}
+                      >
+                        <Icon name="xmark" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {items.length > 1 && (
+                  <div style={{ marginTop: 8, paddingTop: 6, borderTop: 'var(--hair) solid var(--sep-op)' }}>
+                    <button
+                      type="button"
+                      className="btn plain sm"
+                      onClick={() => setDishFrom(items)}
+                    >
+                      <Icon name="copy" /> Save this meal as a recipe dish
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="muted" style={{ margin: '4px 0 0', fontSize: 'var(--fs-footnote)' }}>
+                No food logged for {slot.toLowerCase()}.
+              </p>
             )}
-          </section>
+          </div>
         )
       })}
 
+      {/* Water Tracker Card */}
       {modules.water && (
-        <section className="card">
-          <header>
-            <h2>Water</h2>
-            <small>
-              {glasses} {glasses === 1 ? 'glass' : 'glasses'}
-            </small>
-            <button type="button" className="ghost" onClick={() => addWater(date, -1)} aria-label="Remove a glass">
-              −
-            </button>
-            <button type="button" onClick={() => addWater(date, 1)} aria-label="Add a glass">
-              +
-            </button>
-          </header>
-        </section>
+        <WaterTracker date={date} glasses={glasses} onAddWater={addWater} />
       )}
 
+      {/* Intermittent Fasting Card */}
+      <FastingTracker />
+
+      {/* Exercise / Workout Calorie Burn Card */}
+      <ExerciseTracker date={date} />
+
+      {/* Daily Diet Quality Score (HealthifyMe RIA Score) */}
+      <DietQualityScore totals={eaten} goal={goal} />
+
+      {/* Full Micronutrients Details Accordion */}
+      {entries.length > 0 && (
+        <div className="card">
+          <div className="card-head">
+            <div className="card-head-main">
+              <span className="card-head-g">
+                <Icon name="list" />
+              </span>
+              <div className="card-head-t">
+                <span className="card-head-title">Micronutrient Breakdown</span>
+                <span className="card-head-sub">Vitamins, Minerals, Sodium & Sugar</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="iconbtn"
+              onClick={() => setShowNutrients(!showNutrients)}
+              aria-label="Toggle nutrients"
+            >
+              <Icon name={showNutrients ? 'chevronUp' : 'chevronDown'} />
+            </button>
+          </div>
+          {showNutrients && (
+            <div style={{ marginTop: 12 }}>
+              <Nutrition totals={eaten} known={eaten.known} amountLabel="Day Total" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Weekly AI Review */}
       {aiReady && <Review date={date} goal={goal} />}
-      {modules.ai && user && !user.ai?.ready && (
-        <p className="muted center">
-          Logging by voice or photo and the weekly review run on your own AI provider.{' '}
-          <button type="button" className="link" onClick={() => goSettings('ai')}>
-            Connect one in Settings
-          </button>
-        </p>
-      )}
 
+      {/* Dialogs and Sheets */}
       {photoTo && (
         <PhotoLog
           title={`Photo for ${photoTo.toLowerCase()}`}
           onClose={() => setPhotoTo(null)}
           onAdd={(items) => {
-            for (const it of items) addEntry(date, { meal: photoTo, name: it.name, grams: it.grams, ...scale(it.per100, it.grams) })
+            for (const it of items)
+              addEntry(date, {
+                meal: photoTo,
+                name: it.name,
+                grams: it.grams,
+                ...(it.foodId && { foodId: it.foodId }),
+                ...scale(it.per100, it.grams),
+              })
+            toast(`Logged photo items to ${photoTo}`)
+            setPhotoTo(null)
+          }}
+          onAddDish={(dish) => {
+            addEntry(date, {
+              meal: photoTo,
+              name: dish.name,
+              grams: dish.rawGrams,
+              foodId: dish.id,
+              ...scale(dish.per100, dish.rawGrams),
+            })
+            toast(`Created recipe "${dish.name}" & logged to ${photoTo}`)
             setPhotoTo(null)
           }}
         />
       )}
 
+      {labelTo && (
+        <LabelScanner
+          defaultMeal={labelTo}
+          onClose={() => setLabelTo(null)}
+          onSaved={() => setLabelTo(null)}
+        />
+      )}
+
       {addTo && (
         <FoodPicker
-          title={`Add to ${addTo.toLowerCase()}`}
+          title={`Add to ${addTo}`}
           onClose={() => setAddTo(null)}
           onPick={(food, grams) => {
-            addEntry(date, { meal: addTo, name: food.name, grams, foodId: food.id, ...scale(food.per100, grams) })
+            addEntry(date, {
+              meal: addTo,
+              name: food.name,
+              grams,
+              foodId: food.id,
+              ...scale(food.per100, grams),
+            })
+            toast(`Added ${food.name} to ${addTo}`)
             setAddTo(null)
           }}
         />
       )}
 
-      {open && <EntryDetail date={date} entry={open} onClose={() => setOpen(null)} />}
+      {quickAddTo && (
+        <div className="sheet-backdrop" onClick={() => setQuickAddTo(null)}>
+          <div className="center" onClick={(e) => e.stopPropagation()}>
+            <QuickAddModal
+              date={date}
+              defaultMeal={quickAddTo}
+              onClose={() => setQuickAddTo(null)}
+            />
+          </div>
+        </div>
+      )}
 
-      {describing && <DescribeMeal date={date} onClose={() => setDescribing(false)} />}
+      {describing && (
+        <DescribeMeal date={date} onClose={() => setDescribing(false)} />
+      )}
 
       {dishFrom && (
         <DishBuilder
-          start={dishFrom.map((e) => ({ name: e.name, grams: e.grams, per100: per100Of(e), ...(e.foodId && { foodId: e.foodId }) }))}
+          start={dishFrom.map((e) => ({
+            name: e.name,
+            grams: e.grams,
+            per100: per100Of(e),
+            ...(e.foodId && { foodId: e.foodId }),
+          }))}
           onClose={() => setDishFrom(null)}
-          onSaved={() => setDishFrom(null)}
+          onSaved={() => {
+            toast('Saved custom dish!')
+            setDishFrom(null)
+          }}
         />
       )}
     </>

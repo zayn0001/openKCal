@@ -40,7 +40,7 @@ export function AiPage() {
     if (user) call('GET', '/api/ai').then(load, (e) => setMsg(e.message))
   }, [user])
 
-  if (!user) return <section className="card"><p className="muted">Sign in (Settings → Account) to use AI features: they run through your Thally server on your own AI provider.</p></section>
+  if (!user) return <section className="card"><p className="muted">Sign in (Settings → Account) to use AI features: they run through your openKCal server on your own AI provider.</p></section>
   if (!cfg) return <section className="card"><p className="muted">{msg || 'Loading…'}</p></section>
 
   const meta = cfg.providers[provider]

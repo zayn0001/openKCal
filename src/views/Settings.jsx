@@ -1,33 +1,43 @@
+import Icon from '../components/Icon'
+import Onboarding from './Onboarding'
 import { AccountPage } from '../settings/account'
 import { AdminPage } from '../settings/admin'
 import { AiPage } from '../settings/ai'
 import { AboutPage, LookPage, ModulesPage, ProfilePage, UnitsPage } from '../settings/basic'
 import { DataPage } from '../settings/data'
 import { IntegrationsPage } from '../settings/integrations'
+import { OpenGymPage } from '../settings/opengym'
 import { RemindersPage } from '../settings/reminders'
 import { useSettings } from '../store'
 import { useSync } from '../sync'
 
-// Settings, page by page as in openGym. `mod`: the module a page belongs to; with it off the
-// page is gone. `when`: who sees it.
 const PAGES = {
-  profile: { title: 'Profile & targets', hint: 'Body, activity and goal', Page: ProfilePage },
-  modules: { title: 'Modules', hint: 'Switch parts of Thally on and off', Page: ModulesPage },
-  units: { title: 'Units', hint: 'kcal or kJ, kg or lb, cm or inches', Page: UnitsPage },
-  look: { title: 'Look', hint: 'Theme and accent colour', Page: LookPage },
-  reminders: { title: 'Reminders', hint: 'Meal reminders by notification', Page: RemindersPage, mod: 'reminders', when: (c) => !!c.server },
-  ai: { title: 'AI', hint: 'Your own AI provider for photo logging and reviews', Page: AiPage, mod: 'ai', when: (c) => !!c.server },
-  integrations: { title: 'Integrations', hint: 'Webhooks to Home Assistant, n8n, ntfy…', Page: IntegrationsPage, mod: 'webhooks', when: (c) => !!c.server },
-  data: { title: 'Data & backup', hint: 'Export, import, spreadsheets, reset', Page: DataPage },
-  account: { title: 'Account', hint: 'Sign-in, passkeys, devices', Page: AccountPage },
-  admin: { title: 'Admin dashboard', hint: 'People, invite codes, activity log', Page: AdminPage, when: (c) => !!c.user?.admin },
-  about: { title: 'About', hint: 'Version, install, data sources', Page: AboutPage },
+  profile: { title: 'Profile & Targets', hint: 'Body, activity and fitness goal', icon: 'person', tint: 'var(--blue)', Page: ProfilePage },
+  opengym: { title: 'openGym Connection', hint: 'Sync workouts, body weight & measurements', icon: 'dumbbell', tint: 'var(--lime)', Page: OpenGymPage },
+  welcome: { title: 'Welcome Guide & APK', hint: 'Overview, features & Android APK download', icon: 'sparkles', tint: 'var(--turmeric)', Page: Onboarding },
+  modules: { title: 'Modules', hint: 'Turn parts of openKCal on and off', icon: 'list', tint: 'var(--green)', Page: ModulesPage },
+  units: { title: 'Units', hint: 'kcal or kJ, kg or lb, cm or inches', icon: 'scale', tint: 'var(--orange)', Page: UnitsPage },
+  look: { title: 'Look & Feel', hint: 'Theme and accent colors', icon: 'sun', tint: 'var(--purple)', Page: LookPage },
+  reminders: { title: 'Reminders', hint: 'Meal reminders by notification', icon: 'bell', tint: 'var(--red)', Page: RemindersPage, mod: 'reminders', when: (c) => !!c.server },
+  ai: { title: 'AI Configuration', hint: 'Own AI provider for photo logging and reviews', icon: 'sparkles', tint: 'var(--teal)', Page: AiPage, mod: 'ai', when: (c) => !!c.server },
+  integrations: { title: 'Integrations', hint: 'Webhooks to Home Assistant, n8n, ntfy…', icon: 'plug', tint: 'var(--indigo)', Page: IntegrationsPage, mod: 'webhooks', when: (c) => !!c.server },
+  data: { title: 'Data & Backup', hint: 'Export, import, spreadsheets, reset', icon: 'share', tint: 'var(--mint)', Page: DataPage },
+  account: { title: 'Account', hint: 'Sign-in, passkeys, devices', icon: 'key', tint: 'var(--grey)', Page: AccountPage },
+  admin: { title: 'Admin Dashboard', hint: 'People, invite codes, activity log', icon: 'gear', tint: 'var(--red)', Page: AdminPage, when: (c) => !!c.user?.admin },
+  about: { title: 'About openKCal', hint: 'Version, install, openGym companion', icon: 'info', tint: 'var(--blue)', Page: AboutPage },
 }
-const GROUPS = [['profile'], ['modules', 'units', 'look'], ['reminders', 'ai', 'integrations'], ['data', 'account', 'admin', 'about']]
+
+const GROUPS = [
+  ['profile', 'opengym', 'welcome'],
+  ['modules', 'units', 'look'],
+  ['reminders', 'ai', 'integrations'],
+  ['data', 'account', 'admin', 'about'],
+]
 
 export default function Settings({ page, setPage }) {
   const { modules } = useSettings()
   const { user, server } = useSync()
+
   const visible = (id) => {
     const p = PAGES[id]
     return (!p.mod || modules[p.mod]) && (!p.when || p.when({ user, server }))
@@ -37,43 +47,80 @@ export default function Settings({ page, setPage }) {
     const { title, Page } = PAGES[page]
     return (
       <>
-        <nav className="subhead">
-          <button type="button" className="ghost" onClick={() => setPage(null)} aria-label="Back to settings">
-            ‹ Settings
+        <div className="hdr" style={{ marginBottom: 12 }}>
+          <button
+            type="button"
+            className="iconbtn"
+            onClick={() => setPage(null)}
+            aria-label="Back to Settings"
+          >
+            <Icon name="chevronLeft" />
           </button>
-          <h2>{title}</h2>
-        </nav>
-        <Page />
+          <div style={{ flex: 1, marginLeft: 12 }}>
+            <h1 style={{ fontSize: 'var(--fs-title2)' }}>{title}</h1>
+          </div>
+        </div>
+        <Page onExit={() => setPage(null)} />
       </>
     )
   }
 
   return (
     <>
+      <div className="hdr">
+        <div>
+          <h1>Settings</h1>
+          <p className="sub">Preferences, account & customization</p>
+        </div>
+      </div>
+
       {user && (
-        <button type="button" className="card account-card" onClick={() => setPage('account')}>
-          <strong>{user.name}</strong>
-          <small>{user.owner ? 'Owner of this server' : user.admin ? 'Admin' : 'Signed in'} · Account</small>
+        <button
+          type="button"
+          className="card tappable"
+          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, marginBottom: 16 }}
+          onClick={() => setPage('account')}
+        >
+          <span className="lrow-i" style={{ '--tint': 'var(--acc)' }}>
+            <Icon name="person" />
+          </span>
+          <div style={{ flex: 1, textAlign: 'start' }}>
+            <span style={{ fontSize: 'var(--fs-body)', fontWeight: 600, display: 'block' }}>{user.name}</span>
+            <span className="muted">{user.owner ? 'Server Owner' : user.admin ? 'Administrator' : 'Signed In'} · Manage Account</span>
+          </div>
+          <Icon name="chevronRight" className="lrow-c" />
         </button>
       )}
+
       {GROUPS.map((group, i) => {
         const ids = group.filter(visible)
+        if (!ids.length) return null
+
         return (
-          ids.length > 0 && (
-            <ul key={i} className="list card menu">
-              {ids.map((id) => (
-                <li key={id}>
-                  <button type="button" className="row" onClick={() => setPage(id)}>
-                    <span>
-                      {PAGES[id].title}
-                      <small>{PAGES[id].hint}</small>
+          <div key={i} className="sect">
+            <div className="sect-b">
+              {ids.map((id) => {
+                const item = PAGES[id]
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className="lrow tap"
+                    onClick={() => setPage(id)}
+                  >
+                    <span className="lrow-i" style={{ '--tint': item.tint }}>
+                      <Icon name={item.icon} />
                     </span>
-                    <span aria-hidden="true">›</span>
+                    <span className="lrow-m">
+                      <span className="lrow-t">{item.title}</span>
+                      <span className="lrow-s">{item.hint}</span>
+                    </span>
+                    <Icon name="chevronRight" className="lrow-c" />
                   </button>
-                </li>
-              ))}
-            </ul>
-          )
+                )
+              })}
+            </div>
+          </div>
         )
       })}
     </>

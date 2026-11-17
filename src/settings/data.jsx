@@ -16,14 +16,14 @@ function download(name, text, type) {
 async function importData(e, setNote) {
   const file = e.target.files[0]
   e.target.value = ''
-  if (!file || !confirm('Importing replaces everything in Thally (and on your account, if you are signed in). Continue?')) return
+  if (!file || !confirm('Importing replaces everything in openKCal (and on your account, if you are signed in). Continue?')) return
   let data
   try {
     data = JSON.parse(await file.text())
   } catch {
     data = null
   }
-  setNote(useStore.getState().importState(data) ? 'Imported.' : 'That file is not a Thally backup.')
+  setNote(useStore.getState().importState(data) ? 'Imported.' : 'That file is not an openKCal backup.')
 }
 
 export function DataPage() {
@@ -41,20 +41,20 @@ export function DataPage() {
           {counts.foods} foods and dishes of your own.
         </p>
         <div className="actions start">
-          <button type="button" onClick={() => download(`thally-${today()}.json`, JSON.stringify(pick(useStore.getState())), 'application/json')}>
+          <button type="button" onClick={() => download(`openkcal-${today()}.json`, JSON.stringify(pick(useStore.getState())), 'application/json')}>
             Export backup (JSON)
           </button>
-          <button type="button" className="ghost" onClick={() => download(`thally-diary-${today()}.csv`, diaryCsv(useStore.getState().diary), 'text/csv')}>
+          <button type="button" className="ghost" onClick={() => download(`openkcal-diary-${today()}.csv`, diaryCsv(useStore.getState().diary), 'text/csv')}>
             Diary as spreadsheet (CSV)
           </button>
-          <button type="button" className="ghost" onClick={() => download(`thally-weight-${today()}.csv`, weightCsv(useStore.getState().weights), 'text/csv')}>
+          <button type="button" className="ghost" onClick={() => download(`openkcal-weight-${today()}.csv`, weightCsv(useStore.getState().weights), 'text/csv')}>
             Weight as spreadsheet (CSV)
           </button>
         </div>
       </section>
       <section className="card">
         <h2>Restore</h2>
-        <p className="muted">Import a JSON backup made by Thally. It replaces what is here now.</p>
+        <p className="muted">Import a JSON backup made by openKCal. It replaces what is here now.</p>
         <div className="actions start">
           <button type="button" className="ghost" onClick={(e) => e.currentTarget.nextSibling.click()}>
             Import backup
@@ -78,7 +78,7 @@ export function DataPage() {
             type="button"
             className="danger"
             onClick={async () => {
-              if (!confirm('Delete all your Thally data? This cannot be undone.')) return
+              if (!confirm('Delete all your openKCal data? This cannot be undone.')) return
               try {
                 await resetEverything()
                 setNote('Everything was reset.')

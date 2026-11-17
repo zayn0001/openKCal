@@ -25,7 +25,7 @@ export function IntegrationsPage() {
     }
   }
 
-  if (!user) return <section className="card"><p className="muted">Webhooks are sent by your Thally server, so sign in first (Settings → Account).</p></section>
+  if (!user) return <section className="card"><p className="muted">Webhooks are sent by your openKCal server, so sign in first (Settings → Account).</p></section>
   if (!data) return <section className="card"><p className="muted">{msg || 'Loading…'}</p></section>
 
   return (
@@ -33,7 +33,7 @@ export function IntegrationsPage() {
       <section className="card">
         <h2>Webhooks</h2>
         <p className="muted">
-          Thally’s server sends a signed JSON message to a URL you choose when something happens, from whichever device you logged it on. Home Assistant, n8n,
+          openKCal’s server sends a signed JSON message to a URL you choose when something happens, from whichever device you logged it on. Home Assistant, n8n,
           Node-RED and ntfy all take them. Only events from the last 7 days are sent, so restoring a backup doesn’t replay your history.
         </p>
         {data.hooks.map((h) => {
@@ -95,7 +95,7 @@ export function IntegrationsPage() {
       {secret ? (
         <section className="card">
           <h2>Signing secret</h2>
-          <p className="muted">Shown this once. Paste it into your tool if it checks signatures; Thally can’t show it again.</p>
+          <p className="muted">Shown this once. Paste it into your tool if it checks signatures; openKCal can’t show it again.</p>
           <p className="code">{secret}</p>
           <div className="actions">
             <button type="button" onClick={() => setSecret(null)}>

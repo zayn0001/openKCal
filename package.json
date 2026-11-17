@@ -1,5 +1,5 @@
 {
-  "name": "thally",
+  "name": "openkcal",
   "private": true,
   "version": "0.3.0",
   "type": "module",
@@ -33,5 +33,5 @@
     "web-push": "^3.6.7",
     "zod": "^4.6.7"
   },
-  "description": "Local-first food and weight tracker: a thali you can tally"
+  "description": "Local-first nutrition, calorie and macro tracker: companion to openGym"
 }

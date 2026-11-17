@@ -3,16 +3,22 @@ import { sourceLabel } from './lib/sources'
 import { MEALS } from './lib/settings'
 import Nutrition from './Nutrition'
 
-// Choose how much of a food (in its portions or grams), see its nutrition for that amount, then
-// submit. With `meals`, also which meal it goes to.
-export default function FoodAmount({ food, submitLabel = 'Add', onSubmit, meals = false, defaultMeal = 'Lunch', children }) {
+export default function FoodAmount({
+  food,
+  submitLabel = 'Add',
+  onSubmit,
+  meals = false,
+  defaultMeal = 'Lunch',
+  children,
+}) {
   const portions = [...food.portions, { name: 'g', grams: 1 }]
   const [pi, setPi] = useState(0)
   const [qty, setQty] = useState(food.portions.length ? 1 : 100)
   const [meal, setMeal] = useState(defaultMeal)
   const grams = (qty || 0) * portions[pi].grams
   const portion = portions[pi]
-  const amountLabel = portion.name === 'g' ? `${Math.round(grams)} g` : `${qty} ${portion.name} (${Math.round(grams)} g)`
+  const amountLabel =
+    portion.name === 'g' ? `${Math.round(grams)} g` : `${qty} ${portion.name} (${Math.round(grams)} g)`
 
   return (
     <form
@@ -21,15 +27,30 @@ export default function FoodAmount({ food, submitLabel = 'Add', onSubmit, meals 
         if (grams > 0) onSubmit(grams, meal)
       }}
     >
-      <div className="fields">
-        <label>
-          Amount
-          <input type="number" min="0.1" step="any" required value={qty} onChange={(e) => setQty(+e.target.value)} />
-        </label>
-        <label>
-          Unit
+      <div className="sect-b" style={{ marginBottom: 14 }}>
+        <div className="lrow">
+          <span className="lrow-m">
+            <span className="lrow-t">Serving Amount</span>
+          </span>
+          <input
+            type="number"
+            min="0.1"
+            step="any"
+            required
+            className="num"
+            value={qty}
+            style={{ width: '80px', textAlign: 'right' }}
+            onChange={(e) => setQty(+e.target.value)}
+          />
+        </div>
+
+        <div className="lrow">
+          <span className="lrow-m">
+            <span className="lrow-t">Portion Unit</span>
+          </span>
           <select
             value={pi}
+            className="activity-select"
             onChange={(e) => {
               const i = +e.target.value
               setPi(i)
@@ -38,26 +59,46 @@ export default function FoodAmount({ food, submitLabel = 'Add', onSubmit, meals 
           >
             {portions.map((p, i) => (
               <option key={p.name + i} value={i}>
-                {p.name === 'g' ? 'grams' : `${p.name} (${p.grams} g)`}
+                {p.name === 'g' ? 'Grams (g)' : `${p.name} (${p.grams} g)`}
               </option>
             ))}
           </select>
-        </label>
+        </div>
+
         {meals && (
-          <label>
-            Meal
-            <select value={meal} onChange={(e) => setMeal(e.target.value)}>
+          <div className="lrow">
+            <span className="lrow-m">
+              <span className="lrow-t">Meal Slot</span>
+            </span>
+            <select
+              value={meal}
+              className="activity-select"
+              onChange={(e) => setMeal(e.target.value)}
+            >
               {MEALS.map((m) => (
-                <option key={m}>{m}</option>
+                <option key={m} value={m}>
+                  {m}
+                </option>
               ))}
             </select>
-          </label>
+          </div>
         )}
       </div>
-      <Nutrition per100={food.per100} grams={grams} amountLabel={amountLabel} source={sourceLabel(food)} />
-      <div className="actions">
+
+      <div style={{ marginBottom: 14 }}>
+        <Nutrition
+          per100={food.per100}
+          grams={grams}
+          amountLabel={amountLabel}
+          source={sourceLabel(food)}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: 10 }}>
         {children}
-        <button>{submitLabel}</button>
+        <button type="submit" className="btn primary" style={{ flex: 1 }}>
+          {submitLabel}
+        </button>
       </div>
     </form>
   )

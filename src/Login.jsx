@@ -5,7 +5,7 @@ import { signedIn, useSync } from './sync'
 // Signing in and creating an account. What is offered follows the server: passkeys need its
 // ORIGIN set, new accounts need an invite code unless sign-up is open, and "without an account"
 // is only there when the server allows guests.
-export default function Login({ full = false }) {
+export default function Login({ full = false, onOpenWelcome }) {
   const server = useSync((s) => s.server)
   const [mode, setMode] = useState(server?.signup === 'first' ? 'signup' : 'signin')
   const [problem, setProblem] = useState('')
@@ -34,7 +34,7 @@ export default function Login({ full = false }) {
 
   return (
     <section className={full ? 'card login' : 'card'}>
-      {full && <h2 className="hero">Welcome to Thally</h2>}
+      {full && <h2 className="hero">Welcome to openKCal</h2>}
       {['signin', 'signup'].includes(mode) && (
         <div className="segmented" role="tablist">
           {tabs.map(([m, label]) => (
@@ -155,7 +155,19 @@ export default function Login({ full = false }) {
 
       {full && (
         <p className="muted center">
-          <a href="/welcome">What is Thally, and the Android app</a>
+          <button
+            type="button"
+            className="link"
+            onClick={() => {
+              if (onOpenWelcome) onOpenWelcome()
+              else {
+                window.location.hash = '#welcome'
+                window.dispatchEvent(new Event('popstate'))
+              }
+            }}
+          >
+            What is openKCal, and the Android app
+          </button>
         </p>
       )}
 

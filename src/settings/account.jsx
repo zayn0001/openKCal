@@ -119,7 +119,7 @@ export function AccountPage() {
   if (!server)
     return (
       <section className="card">
-        <p className="muted">{server === null ? 'Checking for a server…' : 'Thally is running on its own here, without a server, so there is no account: your data stays in this browser. Run the Thally server to sync devices.'}</p>
+        <p className="muted">{server === null ? 'Checking for a server…' : 'openKCal is running locally in this browser without a server, so there is no account: your data stays on this device. Run the openKCal server to sync devices.'}</p>
       </section>
     )
   if (!user) return <Login />
@@ -199,7 +199,7 @@ export function AccountPage() {
             className="ghost"
             onClick={wrap(() =>
               withProof('Changing your sign-in e-mail needs your password or a passkey.', user, async (proof) => {
-                const email = prompt('E-mail to sign in with (leave empty to remove). Thally never sends mail to it.', user.email || '')
+                const email = prompt('E-mail to sign in with (leave empty to remove). openKCal never sends mail to it.', user.email || '')
                 if (email === null) return
                 await call('POST', '/api/account/email', { ...proof, email })
               }),

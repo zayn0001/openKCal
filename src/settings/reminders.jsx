@@ -28,10 +28,10 @@ export function RemindersPage() {
     })
   }, [user])
 
-  if (!user) return <section className="card"><p className="muted">Reminders are sent by your Thally server, so sign in first (Settings → Account).</p></section>
-  if (!pushSupported()) return <section className="card"><p className="muted">This browser can’t receive notifications. On iPhone, add Thally to the Home Screen first, then open it from there.</p></section>
+  if (!user) return <section className="card"><p className="muted">Reminders are sent by your openKCal server, so sign in first (Settings → Account).</p></section>
+  if (!pushSupported()) return <section className="card"><p className="muted">This browser can’t receive notifications. On iPhone, add openKCal to the Home Screen first, then open it from there.</p></section>
   if (!navigator.serviceWorker.controller)
-    return <section className="card"><p className="muted">Reminders need the installed app (the production build). Reload once, or install Thally from the browser menu.</p></section>
+    return <section className="card"><p className="muted">Reminders need the installed app (the production build). Reload once, or install openKCal from the browser menu.</p></section>
 
   const turnOn = async () => {
     setMsg('')

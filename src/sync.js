@@ -34,6 +34,13 @@ function apply(state) {
   applying = false
 }
 
+export async function fetchSharedRecipes() {
+  const r = await api('GET', '/api/recipes').catch(() => null)
+  if (r?.ok && Array.isArray(r.body?.recipes)) {
+    useStore.getState().setSharedRecipes(r.body.recipes)
+  }
+}
+
 export async function sync() {
   if (busy || !useSync.getState().user) return
   busy = true
@@ -44,7 +51,10 @@ export async function sync() {
         const r = await api('GET', '/api/state')
         if (r.status === 401) return useSync.setState(SIGNED_OUT)
         if (r.ok && r.body.rev !== rev && r.body.state) apply(r.body.state)
-        if (r.ok) useSync.setState({ rev: r.body.rev, error: '' })
+        if (r.ok) {
+          useSync.setState({ rev: r.body.rev, error: '' })
+          fetchSharedRecipes().catch(() => {})
+        }
         return
       }
       const before = changes
@@ -59,6 +69,7 @@ export async function sync() {
         continue
       }
       if (!r.ok) return useSync.setState({ error: r.body?.error || 'Sync failed' })
+      fetchSharedRecipes().catch(() => {})
       return useSync.setState({ rev: r.body.rev, dirty: changes !== before, error: '' })
     }
   } catch {
@@ -111,4 +122,5 @@ export async function startSync() {
   addEventListener('online', sync)
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && sync())
   sync()
+  fetchSharedRecipes().catch(() => {})
 }

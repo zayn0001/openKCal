@@ -32,9 +32,41 @@ export function offToFood(code, json) {
 }
 
 export async function lookupBarcode(code) {
-  const res = await fetch(
-    `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,nutriments,serving_quantity,quantity`,
-  )
-  if (!res.ok && res.status !== 404) throw new Error(`Open Food Facts answered ${res.status}`)
+  const url = `https://world.openfoodfacts.net/api/v2/product/${code}.json?fields=product_name,brands,nutriments,serving_quantity,quantity`
+  const headers = { 'User-Agent': 'openKCal - Web - Version 0.3.0 - https://github.com/openkcal/openkcal' }
+  const res = await fetch(url, { headers }).catch(() => null)
+  if (!res || (!res.ok && res.status !== 404)) {
+    // Fallback to world.openfoodfacts.org
+    const fallback = await fetch(
+      `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,nutriments,serving_quantity,quantity`,
+      { headers },
+    ).catch(() => null)
+    if (!fallback?.ok) return null
+    return offToFood(code, await fallback.json().catch(() => null))
+  }
   return offToFood(code, await res.json().catch(() => null))
+}
+
+/** Search Open Food Facts database by text query when not found in local catalogue. */
+export async function searchOff(query, limit = 15) {
+  const q = (query || '').trim()
+  if (!q || q.length < 2) return []
+  const url = `https://world.openfoodfacts.net/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=${limit}&fields=code,product_name,brands,nutriments,serving_quantity,quantity`
+  const headers = { 'User-Agent': 'openKCal - Web - Version 0.3.0 - https://github.com/openkcal/openkcal' }
+  let res = await fetch(url, { headers }).catch(() => null)
+  if (!res || !res.ok) {
+    // Fallback to .org mirror
+    const fbUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=${limit}&fields=code,product_name,brands,nutriments,serving_quantity,quantity`
+    res = await fetch(fbUrl, { headers }).catch(() => null)
+  }
+  if (!res || !res.ok) return []
+  const data = await res.json().catch(() => null)
+  const products = Array.isArray(data?.products) ? data.products : []
+  const results = []
+  for (const p of products) {
+    if (!p || !p.code) continue
+    const food = offToFood(p.code, { status: 1, product: p })
+    if (food) results.push(food)
+  }
+  return results
 }

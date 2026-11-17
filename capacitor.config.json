@@ -1,5 +1,5 @@
 {
-  "appId": "app.thally.tracker",
-  "appName": "Thally",
+  "appId": "app.openkcal.tracker",
+  "appName": "openKCal",
   "webDir": "dist"
 }

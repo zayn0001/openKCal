@@ -292,7 +292,12 @@ test('webhooks: signed deliveries for new food, test events, private addresses r
   for (const g of got) assert.ok(verifySignature(made.body.secret, g.raw, g.headers['x-thally-signature']))
   const real = got.map((g) => JSON.parse(g.raw)).find((b) => b.type === 'food.logged' && !b.test)
   assert.deepEqual([real.data.entries[0].name, real.data.day.kcal], ['Dal', 150])
-  const list = (await owner('GET', '/api/hooks')).body
+  let list
+  for (let i = 0; i < 50; i++) {
+    list = (await owner('GET', '/api/hooks')).body
+    if (list?.log?.length >= 3) break
+    await new Promise((r) => setTimeout(r, 50))
+  }
   assert.equal(list.log.length, 3)
   assert.ok(list.hooks[0].lastOk)
   // With the Webhooks module off, new food sends nothing.

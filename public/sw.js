@@ -7,25 +7,25 @@ self.addEventListener('fetch', (e) => {
     fetch(e.request)
       .then((res) => {
         const copy = res.clone()
-        caches.open('thally-v1').then((c) => c.put(e.request, copy))
+        caches.open('openkcal-v1').then((c) => c.put(e.request, copy))
         return res
       })
       .catch(() => caches.match(e.request)),
   )
 })
 
-// Meal reminders from the Thally server (Settings → Reminders).
+// Meal reminders from the openKCal server (Settings → Reminders).
 self.addEventListener('push', (e) => {
   let n = {}
   try {
     n = e.data.json()
   } catch {
-    n = { title: 'Thally', body: e.data?.text() || '' }
+    n = { title: 'openKCal', body: e.data?.text() || '' }
   }
-  e.waitUntil(self.registration.showNotification(n.title || 'Thally', { body: n.body, tag: n.tag, icon: '/favicon.svg', badge: '/favicon.svg' }))
+  e.waitUntil(self.registration.showNotification(n.title || 'openKCal', { body: n.body, tag: n.tag, icon: '/favicon.svg', badge: '/favicon.svg' }))
 })
 
-// Tapping a reminder opens Thally, or brings an open window to the front.
+// Tapping a reminder opens openKCal, or brings an open window to the front.
 self.addEventListener('notificationclick', (e) => {
   e.notification.close()
   e.waitUntil(

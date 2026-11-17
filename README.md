@@ -1,321 +1,166 @@
-# Thally
+# openKCal
 
-**A thali you can tally.** Thally is a food and weight tracker that works on its own in your
-browser, with no account, and becomes a shared, synced app when you run its small server.
-Your data stays in a folder (or a bucket) you control: no third-party account, no ads, no telemetry.
+<p align="center">
+  <strong>An open-source, local-first nutrition, calorie, and macro tracker crafted with an OLED-native interface, openGym ecosystem sync, HealthifyMe-grade wellness features, AI vision tools, and a shared community food database.</strong>
+</p>
 
-It follows [openGym](https://github.com/DuarteSantos8/openGym): a local-first web app, plain files
-instead of a database, one container to self-host, and the same set of account, admin and
-integration features.
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#opengym-integration">openGym Sync</a> •
+  <a href="#healthifyme-wellness-suite">HealthifyMe Features</a> •
+  <a href="#ai-vision-skills">AI Vision Tools</a> •
+  <a href="#community-database">Community Database</a> •
+  <a href="#self-hosting">Self-Hosting</a> •
+  <a href="#android-apk">Android APK</a>
+</p>
 
-## What it does
+---
 
-**Logging**
+## Overview
 
-- A diary by meal (breakfast, lunch, snack, dinner) against your daily calorie and macro targets.
-  Tap any entry to see its full nutrition, change the amount or move it to another meal.
-- 5,956 foods to search: Indian raw foods from IFCT 2017 and cooked dishes with household portions
-  (cup, piece, slice) from USDA FNDDS.
-- **Nutrition facts for every food you pick**: energy, protein, carbohydrate and sugars, fat and
-  saturated fat, fibre and sodium, for the amount you chose and per 100 g, with the share of
-  energy from protein, carbs and fat and where the numbers come from.
-- Packaged foods by barcode, scanned with the camera or typed in, looked up on Open Food Facts.
-- **Dishes:** join ingredients into a dish (your rajma chawal, your mum’s dal), with servings and,
-  if you weigh the pot, the cooked weight. Dishes are saved to your account, show up first in every
-  search, and can be opened and changed later. A whole logged meal can be saved as a dish too.
-- Your own foods from a label, water by the glass, and a breakdown of every nutrient for the day.
+**openKCal** is a private, local-first nutrition and fitness tracking application designed to accompany [openGym](https://github.com/DuarteSantos8/openGym). It functions completely standalone in your browser without an account, and seamlessly connects to a lightweight self-hosted server for multi-device sync, community recipes, and automated background backups.
 
-**Targets and progress**
+Your data stays on hardware you control: plain JSON files instead of opaque databases, zero third-party telemetry, and zero ads.
 
-- Daily targets from your profile (Mifflin-St Jeor). Never fewer than 1,200 kcal.
-- A weight log with a trend line and your goal weight.
+---
 
-**On your own AI provider** (optional)
+## Features
 
-- **Tell Thally what you ate:** say it (the browser’s dictation) or type it, like “two rotis, a
-  katori of dal and a chai”. An agent searches your own foods and the catalogue, estimates grams,
-  and when a home-made dish isn’t in your list it drafts one from ingredients. You review every
-  entry and every new dish, change grams or meals, untick anything, and only then is it logged and
-  saved.
-- **Photo logging:** photograph your plate and get draft entries with estimated grams to correct.
-- **Weekly review:** a short read of your last seven days against your targets.
-- Every model call uses the provider **you** connect in Settings → AI: Anthropic (Claude), OpenAI,
-  Google Gemini, or any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, OpenRouter). You
-  bring the key and you are billed for your own use; the server owner pays for nobody’s AI.
+### 1. UI & Experience (openGym HIG)
+- **OLED True-Black Theme**: Strict `#000000` surface matching openGym's design standards.
+- **Micro-Interactions**: Hairline dividers, stroke-based 24×24 system iconography, and smooth hardware-accelerated animations.
+- **Customizable Palettes**: Accent color choices including Lime, Sky, Turmeric, Violet, Orange, Pink, Teal, and Gold.
 
-**Accounts, sharing and admin** (with the server, as in openGym)
+### 2. Diary & Food Logging
+- **Meal-by-Meal Diary**: Breakfast, Lunch, Snacks, and Dinner tracked against dynamic calorie and macro targets.
+- **5,956+ Food Offline Catalogue**: Pre-compiled from **IFCT 2017** (ICMR-NIN Indian raw foods) and **USDA FNDDS** (cooked dishes with household measurements like cups, bowls, and slices).
+- **Comprehensive Nutrient Breakdown**: Energy, protein, carbs, net carbs, fat, fiber, sugars, saturated fat, and sodium.
+- **Recipe Dish Builder**: Combine raw ingredients with cooked pot weights and yield servings.
+- **Open Food Facts Live Fallback & Barcode Scanner**: Scan barcodes or search millions of branded products with automatic background fallback to Open Food Facts when not found in the local catalogue.
 
-- Sign in with a password or a **passkey**, by name or a sign-in e-mail. Add another device with a
-  one-time code instead of typing your password there.
-- The first account owns the server. Others join with an **invite code** (or sign-up can be open
-  or closed). Admins get a dashboard: people, switching accounts off, one-time password reset
-  codes, admin roles, handing over ownership, deleting accounts, invite codes, and an
-  **activity log** of sign-ins, failures and admin actions.
-- **Settings:** profile and targets, modules, units (kcal/kJ, kg/lb, cm/inches), look (theme and
-  accent), reminders, AI, integrations, data and backup, account, about.
-- **Modules:** switch whole parts of the app off (water, weight, barcode lookup, AI, reminders,
-  webhooks), with “Just logging” and “Everything” presets. Nothing is deleted.
-- **Meal reminders** by notification, in your time zone, skipped when that meal is already logged.
-- **Webhooks** to Home Assistant, n8n, Node-RED or ntfy when you log food, weigh in or save a
-  dish: signed with HMAC-SHA256, retried with backoff, with a delivery log, test and retry.
-- **Data:** JSON backup and restore, diary and weight as spreadsheets (CSV), reset everything.
-- Sync between devices that merges rather than overwrites.
+### 3. openGym Ecosystem Integration
+- **Direct 2-Way Sync**: Connect your openKCal instance to your self-hosted [openGym](https://github.com/DuarteSantos8/openGym) server.
+- **User Pairing Token (`SYNC_TOKEN_OG_...`)**: Generate a pairing token in openGym and paste it into openKCal for secure, live background synchronization.
+- **Workout & Burn Integration**: Automatically imports logged workouts, completed exercises, and sets, calculating exact calories burned using MET standards.
+- **Biometric Sync**: Automatically aligns bodyweight records and body circumference measurements (waist, chest, arms, thighs, hips).
+- **CSV Data Compatibility**: One-click import and export matching openGym CSV formats.
 
-## Run it
+### 4. HealthifyMe-Grade Wellness Suite
+- **Intermittent Fasting Tracker**: Support for 16:8, 14:10, 18:6, 20:4, and custom fast schedules with live countdown timers, stage progress, and completion logs.
+- **Water Intake Tracker**: Visual glass counter and progress gauge with customizable daily targets (e.g. 2.5L–4L) and 250ml / 500ml quick-add controls.
+- **Exercise Burn Tracker**: Dedicated activity logging with MET-based caloric calculations for cardio, walking, running, and resistance sessions.
+- **Diet Quality Score (DQS)**: Real-time 1–10 nutritional rating analyzing protein density, fiber sufficiency, and sugar/saturated fat moderations.
+- **Interactive Trends**: Visual weight trajectories, caloric intake vs. burn graphs, and macronutrient balance across 1-week, 1-month, 3-month, and 1-year windows.
+- **AI Coach Chat**: Conversational nutritionist providing daily meal assessments, macro recommendations, and quick shortcuts to vision logging tools.
 
-You need [Node.js](https://nodejs.org) 22 or newer.
+### 5. AI Vision Tools & Skills
+- **Photo Meal Logging**: Photograph your plate or meal; AI identifies components, estimates portions, and provides a 1-tap **"Save as Recipe Dish & Log"** button that shares the recipe globally.
+- **Nutrition Facts Label OCR**: Photograph nutrition facts on packaged food (+ optional front photo); AI normalizes all values per 100g and adds the food to the global community library.
+- **Bring Your Own Key (BYOK)**: Connect Anthropic (Claude), OpenAI (GPT-4o), Google Gemini, or local OpenAI-compatible endpoints (Ollama, LM Studio, vLLM, OpenRouter). Keys remain client-side or AES-256 encrypted on your server.
+
+### 6. Shared Community Database
+- **Automatic Community Sharing**: Every custom food, nutrition label scan, and recipe dish created by any user is automatically synchronized to `recipes.json` and instantly shared with all users across the instance.
+- **Author Attribution**: Items display creator credits (e.g. `Recipe by Priya`, `Shared by Alex`) in the food library and food details.
+
+### 7. In-App Onboarding & APK Distribution
+- **In-App Onboarding Guide**: Built directly into the SPA at `/welcome`, `#welcome`, and in Settings, complete with an interactive macro plate and feature overview.
+- **Direct Android APK Download**: Hosted directly at `/download/openkcal.apk` with live file size check and SHA-256 verification hash.
+- **Automated GitHub Releases**: Packaged and signed via automated GitHub Actions workflow (`.github/workflows/release-apk.yml`).
+
+---
+
+## Quick Start
+
+### Prerequisites
+- [Node.js](https://nodejs.org) 22 or newer
 
 ```bash
+# Clone the repository
+git clone https://github.com/zayn0001/openKCal.git
+cd openKCal
+
+# Install dependencies
 npm install
-npm run dev      # the app on :5173 with hot reload, data in this browser only
+
+# Start development preview (client on :5173 with hot reload)
+npm run dev
 ```
 
-For accounts, sync, AI and the rest, run the server next to it (`/api` is forwarded to it):
+To run both the server and client together with full account and sync capabilities:
 
 ```bash
-npm start        # the server on :3000; it also serves the built app from dist/
+# Start the full server on :3000 (also serves dist/ in production)
+npm start
 ```
 
-| Command | What it does |
+| Command | Description |
 |---|---|
-| `npm run dev` | The app with hot reload on port 5173 |
-| `npm start` | The server on port 3000 (also serves `dist/` once built) |
-| `npm run build` | Production build into `dist/` (offline support and reminders need this build) |
-| `npm test` | Unit tests for `src/lib` and the server tests |
-| `npm run lint` | oxlint |
-| `npm run android` | Android debug APK (see Android below) |
+| `npm run dev` | Starts Vite dev server on port 5173 with HMR |
+| `npm start` | Starts Node.js backend server on port 3000 |
+| `npm run build` | Compiles production bundle into `dist/` |
+| `npm test` | Runs unit & integration test suite (35+ tests) |
+| `npm run lint` | Runs oxlint across all source files |
+| `npm run android` | Builds debug Android APK via Capacitor |
 
-For passkeys during development, set `ORIGIN` to the address in your browser, e.g.
-`ORIGIN=http://localhost:5173 npm start`.
+---
 
-## Self-hosting
+## Self-Hosting
 
-### Docker
+### Docker Compose
 
 ```bash
-cp .env.example .env    # optional settings, explained below
+# Copy example environment variables
+cp .env.example .env
+
+# Build and run container in detached mode
 docker compose up -d --build
 ```
 
-Open http://localhost:3000 and create the first account: it owns the server. Put it behind HTTPS
-(any reverse proxy) before using it over the internet, set `ORIGIN` to the address people type,
-and `TRUST_PROXY=1` so sign-in limits see each visitor’s own address.
+The app will be available on `http://localhost:3000`. The first account created automatically becomes the server owner and administrator.
 
-Everything lives in `./data-server`, so backing up that folder backs up the server:
+All server data is kept inside `./data-server`:
+- `db.json`: Accounts, passwords (scrypt), WebAuthn passkey public keys, and invite codes.
+- `recipes.json`: Shared community foods and recipe dishes created by all users.
+- `state/<uid>.json`: User sync state files (diaries, foods, weight logs).
+- `ai/<uid>.json`: Encrypted user AI configuration and keys.
+- `audit.log`: Security audit trail for sign-ins and administrative changes.
 
-| File | What |
-|---|---|
-| `db.json` | Accounts (password hashes, passkeys’ public keys), invite codes, pending reset codes |
-| `sessions.json` | Sign-in sessions, stored as hashes of their tokens |
-| `state/<id>.json` | Each person’s synced data |
-| `ai/<id>.json` | Each person’s AI settings; keys encrypted with `secret` |
-| `hooks/<id>.json` | Webhooks (URL and signing secret encrypted) and their delivery log |
-| `push/<id>.json`, `vapid.json` | Reminder subscriptions and the server’s push keys |
-| `audit.log` | The activity log, one JSON object per line |
-| `secret` | The key that encrypts stored API keys and webhook secrets. Lose it and those must be entered again |
+### S3 & Supabase Bucket Mirroring
 
-### Render free tier
+For stateless cloud hosts (such as Render free tier), openKCal includes automatic S3 bucket mirroring via `server/mirror.js`:
+- Set `MIRROR_ENDPOINT`, `MIRROR_BUCKET`, `MIRROR_KEY_ID`, and `MIRROR_SECRET`.
+- When set, openKCal automatically synchronizes disk changes to the bucket every 2 seconds and restores state on startup.
 
-Render’s free web services have no persistent disk. `server/mirror.js` (from the openGym fork)
-keeps the data folder in an S3-compatible bucket instead (Supabase Storage, Cloudflare R2 or
-Backblaze B2): it downloads the bucket on start, refuses to start if it can’t read it, uploads
-changes every 2 seconds, and uploads anything pending on shutdown.
+---
 
-1. In Supabase, make sure the **private** `default` bucket exists (the one openGym uses) and you
-   have an S3 access key (Storage → S3 connection → New access key).
-2. Check `MIRROR_ENDPOINT` and `MIRROR_REGION` in `render.yaml` match your project. Thally keeps
-   its files under `thally/` in that bucket (`MIRROR_PREFIX`), so it never touches openGym’s.
-3. In Render: **New → Blueprint**, pick this repository, and enter `MIRROR_KEY_ID` and
-   `MIRROR_SECRET` when asked. Leave `ORIGIN` empty for now.
-4. Open the service’s address and create your account straight away (the first account owns it).
-5. Set `ORIGIN` to that address (e.g. `https://thally-abcd.onrender.com`) to turn passkeys on.
+## Android APK
 
-Limits: a cold start of about a minute after 15 idle minutes; a hard crash can lose the last ~2
-seconds of writes; one instance per bucket folder. openGym’s own mirror copies the whole bucket
-into its data folder on start, `thally/` included, so whoever can read openGym’s server can read
-Thally’s files too (API keys and webhook secrets in them stay encrypted with Thally’s `secret`,
-which is also in that folder);
-Supabase pauses free projects after about a week without activity. Reminders are only sent while
-the service is awake, so on a free plan that sleeps they are unreliable.
-
-### Settings
-
-| Variable | Default | What it does |
-|---|---|---|
-| `PORT` | `3000` | Port the server listens on |
-| `DATA_DIR` | `./data-server` (`/data` in Docker) | Where everything is stored |
-| `ORIGIN` | unset | The exact address people use, e.g. `https://thally.example.com`. Turns passkeys on and marks cookies `Secure` |
-| `SIGNUP` | `invite` | Who may create an account after the first: `invite` (a code from an admin), `open` (anyone), `closed` (nobody) |
-| `ALLOW_GUEST` | `1` | `0` removes “Use without an account”, so the server’s app is for signed-in people only |
-| `ADMIN_UIDS` | unset | Comma-separated account IDs that are always admins (Settings → Account → Account ID) |
-| `TRUST_PROXY` | unset | `1` behind a reverse proxy that overwrites `X-Forwarded-For` |
-| `ALLOW_LAN` | unset | `1` lets everyone’s AI endpoints and webhooks reach home-network addresses. Admins always may, and may also use this machine (Ollama on localhost) |
-| `AI_DAILY_LIMIT` | `40` | AI requests per person per day |
-| `AUDIT_LOG` | `1` | `0` turns the activity log off |
-| `AUDIT_MAX`, `AUDIT_DAYS` | `5000`, `90` | How much of the activity log is kept |
-| `AUDIT_IP` | unset | `net` records the network part of addresses (`203.0.113.0/24`), `full` the whole address |
-| `PUSH_CONTACT` | unset | An e-mail push services can contact about this server’s notifications |
-| `MIRROR_ENDPOINT` | unset | S3 endpoint; when set, the data folder is mirrored to a bucket |
-| `MIRROR_BUCKET`, `MIRROR_KEY_ID`, `MIRROR_SECRET` | unset | Required with `MIRROR_ENDPOINT` |
-| `MIRROR_REGION` | `auto` | Bucket region (`auto` suits R2; Supabase wants the project’s region) |
-| `MIRROR_PREFIX` | unset | A folder in the bucket for Thally’s files (e.g. `thally/`), needed when the bucket is shared with another app |
-
-## AI on your own provider
-
-Each person connects their own provider in **Settings → AI**: pick it, paste an API key (optional
-for a local endpoint), use **List models** to pick a model, tick the box confirming what is sent,
-**Save** and **Test the connection**.
-
-- Keys are encrypted with the server’s `secret` (AES-256-GCM, bound to the account and provider),
-  never returned to the browser, and never part of the synced data or a backup export.
-- What goes to the provider, only when you use a feature: what you say or type to log a meal, with
-  the names and nutrients of your foods and dishes it searches; the meal photo (shrunk in the
-  browser); for a weekly review, your daily totals, targets and weight change for those seven days.
-  Dictation is the browser’s own: Chrome sends the audio to Google to turn it into text.
-- The meal agent has two tools, searching foods and proposing the meal. It can’t write anything:
-  the server checks every food it names against the real catalogue and your list, works out new
-  dishes’ nutrients itself, and the app saves only what you confirm.
-- After an update that sends a new kind of data, the consent box must be ticked again.
-- Anthropic is called through the official SDK (default model `claude-opus-5-5`, with automatic
-  fallback to another model if the first declines a review). OpenAI, Gemini and compatible
-  endpoints are called over HTTPS with the key in a header, never in the URL.
-- A compatible endpoint may only be on the server’s own network for admins (or for everyone with
-  `ALLOW_LAN=1`); cloud metadata addresses are never reachable.
-- Answers are estimates and drafts you correct. Not medical advice.
-
-## Webhooks
-
-Settings → Integrations → Add a webhook. Events: `food.logged` (new diary entries, with the day’s
-totals), `weighin.logged`, `dish.saved`. Each delivery is a `POST` of
-`{ version, id, type, createdAt, data }` with these headers:
-
-- `X-Thally-Event`, `X-Thally-Delivery` (the same id on every retry of one delivery)
-- `X-Thally-Signature: t=<unix seconds>,v1=<hex>`: HMAC-SHA256 of `<t>.<raw body>` with the
-  webhook’s secret, shown once when you add it
-
-```js
-import crypto from 'node:crypto'
-function verify(secret, rawBody, header) {
-  const m = /^t=(\d+),v1=([0-9a-f]{64})$/.exec(header || '')
-  if (!m || Math.abs(Date.now() / 1000 - Number(m[1])) > 300) return false
-  const want = crypto.createHmac('sha256', secret).update(`${m[1]}.${rawBody}`).digest()
-  const got = Buffer.from(m[2], 'hex')
-  return got.length === want.length && crypto.timingSafeEqual(got, want)
-}
-```
-
-Answer `2xx` within 10 seconds. Timeouts, connection errors, `408`, `425`, `429` and `5xx` are
-retried after about 30 s, then 1, 2, 4, 8, 16 and 32 minutes (`Retry-After` is honoured); `410`
-pauses the webhook. Only events from the last 7 days are sent, so restoring a backup doesn’t replay
-history. Pending retries are kept in memory, so a restart drops them.
-
-## Download page and Android app
-
-The server serves a download page at **`/welcome`** (`website/index.html`) and the Android app at
-**`/download/thally.apk`**, so anyone can install it even though the repository is private. The
-sign-in screen and Settings → About link to the page.
-
-A release:
+openKCal can be built as a standalone native Android application via Capacitor:
 
 ```bash
-npm run apk                       # signed release build (needs android/keystore.properties)
-node scripts/release-apk.mjs      # copies it to releases/thally.apk, writes size and SHA-256
-gh release create v0.3.0 releases/thally.apk --title "Thally 0.3.0"
+# Build Android APK locally
+npm run build
+npx cap sync android
+cd android && ./gradlew assembleRelease
 ```
 
-Bump `versionCode` and `versionName` in `android/app/build.gradle` first. The APK is signed with a
-key kept outside the repository (`android/keystore.properties`, git-ignored, says where). **Back
-that key up**: Android only installs an update signed with the same key, so losing it means
-everyone has to uninstall and reinstall.
+Automated release builds and signing are handled via GitHub Actions in [`.github/workflows/release-apk.yml`](.github/workflows/release-apk.yml) utilizing GitHub repository secrets:
+- `ANDROID_KEYSTORE_BASE64`
+- `KEYSTORE_PASSWORD`
+- `KEY_ALIAS`
+- `KEY_PASSWORD`
 
-## Android
+---
 
-```bash
-npm run android                   # debug build
-```
+## Security & Privacy
 
-Needs JDK 21 and the Android SDK; the APK appears under `android/app/build/outputs/apk/debug/`.
-It is the standalone app: data stays on the phone, with no sync, AI or reminders, because those
-come from your server. For those on a phone, open your server’s address in the browser and install
-it from the browser menu. On some Windows networks Java can’t download over IPv6; set
-`JAVA_OPTS` and `GRADLE_OPTS` to `-Djava.net.preferIPv4Stack=true` first.
+- **Scrypt Password Hashing**: Per-account cryptographic salt, compared in constant time with exponential backoff on failed attempts.
+- **Passkeys (FIDO2 / WebAuthn)**: Native biometric and hardware security key sign-in.
+- **Strict Network Controls**: Webhook and AI outbound requests strictly refuse loopback and internal private addresses to eliminate SSRF risks.
+- **Client-Side Data Ownership**: All calculations and local logs function completely offline in the browser even without a network connection.
 
-## How it is built
+---
 
-```
-src/lib/       Pure logic, each piece unit-tested: targets, nutrition, dishes, search, units,
-               settings, state merge, week summary, CSV, barcode parsing
-src/views/     The four tabs: Diary, Foods, Weight, Settings
-src/settings/  The settings pages (account, admin, AI, reminders, integrations, data, basics)
-src/*.jsx      Shared dialogs: food picker and detail, nutrition panel, dish builder, sign-in
-src/store.js   All app data, persisted in the browser; src/sync.js pushes and pulls it
-server/        server.js (routes), accounts.js, passkeys.js, ai.js, hooks.js, push.js, audit.js,
-               secure.js (encryption, signatures, outbound address rules), mirror.js
-scripts/       Build the food catalogue from the source datasets
-android/       Capacitor shell
-```
+## License
 
-### How sync works
-
-The whole state is one JSON document with a revision number. A device sends its copy with the
-revision it last saw. If the server has moved on, it answers `409` with the current copy; the device
-merges and tries again. The merge (`src/lib/state.js`) unions diary entries and foods by id, keeps
-deletions deleted on both sides, and for a single value (one day’s weight, a settings section) lets
-the device making the change win. “Reset everything” replaces instead of merging.
-
-### Security
-
-- Passwords: scrypt with a per-account salt, compared in constant time; 10 to 256 characters, and
-  the most-guessed ones refused. Wrong passwords pause the account (5 free, then 1 minute doubling
-  to an hour) and the address (20 sign-in attempts per 15 minutes).
-- Passkeys: WebAuthn, bound to `ORIGIN`; only public keys are stored.
-- Sessions: `HttpOnly`, `SameSite=Strict` cookies for 30 days; stored as hashes; a new password signs
-  out every other device.
-- Changing the password or e-mail, adding or removing a passkey, making a device code, handing over
-  ownership and deleting the account all need the password or a passkey, not just a session.
-- Admins can’t act on the owner or on other admins (only the owner can), and can’t reset an admin’s
-  password. Reset and invite codes are stored as hashes and work once.
-- Requests that change anything must be JSON, which blocks cross-site form posts.
-- Outbound requests (AI endpoints, webhooks, push) refuse private and metadata addresses at connect
-  time as well as when saved, so DNS tricks don’t get around it.
-
-## Food data
-
-`src/foods-data.json` is generated. Do not edit it by hand.
-
-| Source | What | Notes |
-|---|---|---|
-| IFCT 2017 (National Institute of Nutrition, Hyderabad) | 525 Indian raw foods, from Table 1 | Copyright NIN/ICMR. Fine for personal use; check their terms before publishing or distributing this app. Carbohydrate excludes fibre. No sugars, saturated fat or sodium, and no household portions. |
-| USDA FNDDS 2021-2023 | 5,431 foods as eaten, with portions | Public domain. Carbohydrate includes fibre. |
-| Open Food Facts | Packaged foods, looked up live by barcode | Open Database Licence. Crowd-sourced, so check the numbers. |
-
-To rebuild the catalogue (Python 3 with `pymupdf`):
-
-```bash
-python scripts/extract_ifct.py path/to/IFCT2017.pdf > data/ifct.json
-python scripts/build_foods.py path/to/FoodData_Central_survey_food_csv_2024-10-31
-```
-
-The FNDDS folder is the unzipped “Survey Foods (FNDDS)” CSV download from
-https://fdc.nal.usda.gov/download-datasets. The IFCT extractor reads the table by word position
-and checks every row against the book’s own energy formula; rows that fail are dropped and
-reported (3 of 528: N001, P080, S005).
-
-## Not built (yet)
-
-From openGym, these were left out as they don’t fit a food tracker or need native work:
-
-- Translations (openGym has 20 languages; Thally is English only)
-- iPhone app, Apple Watch and Wear OS apps, Apple Health and Health Connect
-- Importing from other apps (MyFitnessPal, Cronometer); progress photos; the MCP server
-
-## Credits
-
-Accounts, admin, modules, integrations and the Render deployment follow
-[openGym](https://github.com/DuarteSantos8/openGym) by Duarte Santos. Food data comes from the
-sources above.
-
-## Licence
-
-No licence has been chosen yet, so all rights are reserved. The bundled IFCT 2017 data has its own
-copyright (see Food data).
+All rights reserved. Bundled IFCT 2017 nutritional datasets are copyright ICMR - National Institute of Nutrition (Hyderabad).

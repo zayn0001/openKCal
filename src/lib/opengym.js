@@ -412,14 +412,26 @@ export function syncOpenGymData(openGymState, store) {
   }
 
   // Target weight & body sex
+  const mostRecentWeight = Object.keys(updatedWeights).sort().at(-1)
+    ? updatedWeights[Object.keys(updatedWeights).sort().at(-1)]
+    : latestKg
+
   let updatedProfile = store.profile ? { ...store.profile } : null
   if (state.targetW && Number(state.targetW) > 0) {
     if (!updatedProfile) updatedProfile = {}
     updatedProfile.targetKg = Number(state.targetW)
+    updatedProfile.goalWeightKg = Number(state.targetW)
   }
   if (state.body && (state.body === 'male' || state.body === 'female')) {
     if (!updatedProfile) updatedProfile = {}
     updatedProfile.sex = state.body
+  }
+  if (updatedProfile) {
+    if (!updatedProfile.age) updatedProfile.age = 28
+    if (!updatedProfile.heightCm) updatedProfile.heightCm = updatedProfile.sex === 'female' ? 165 : 175
+    if (!updatedProfile.activity) updatedProfile.activity = 'moderate'
+    if (!updatedProfile.goal) updatedProfile.goal = 'hold'
+    if (!updatedProfile.weightKg && mostRecentWeight) updatedProfile.weightKg = mostRecentWeight
   }
 
   const totalOpenGymWorkouts = Object.values(updatedExercises).flat().filter((e) => e.source === 'openGym').length

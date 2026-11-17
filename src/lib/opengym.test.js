@@ -275,3 +275,34 @@ test('syncOpenGymData correctly unpacks wrapped openGym API response { state: {.
   assert.equal(mockStore.exercises['2026-11-17'][0].kcal, 433)
   assert.equal(mockStore.measurements['2026-11-17'].waist, 81)
 })
+
+test('syncOpenGymData safely handles null initial profile and populates full valid defaults', () => {
+  const openGymPayload = {
+    body: 'male',
+    targetW: 75,
+    bodyweight: [{ d: '2026-11-17', w: 76.875 }],
+  }
+
+  const mockStore = {
+    weights: {},
+    exercises: {},
+    measurements: {},
+    profile: null,
+    setOpenGymSync: (syncObj) => {
+      mockStore.weights = syncObj.weights
+      mockStore.exercises = syncObj.exercises
+      mockStore.measurements = syncObj.measurements
+      mockStore.profile = syncObj.profile
+    },
+  }
+
+  syncOpenGymData(openGymPayload, mockStore)
+  assert.ok(mockStore.profile)
+  assert.equal(mockStore.profile.sex, 'male')
+  assert.equal(mockStore.profile.targetKg, 75)
+  assert.equal(mockStore.profile.weightKg, 76.9)
+  assert.ok(Number.isFinite(mockStore.profile.age))
+  assert.ok(Number.isFinite(mockStore.profile.heightCm))
+  assert.ok(mockStore.profile.activity)
+  assert.ok(mockStore.profile.goal)
+})

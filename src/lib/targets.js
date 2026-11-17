@@ -5,9 +5,20 @@ const MIN_KCAL = 1200 // never suggest less than this, whatever the maths says
 // Daily targets from a profile: Mifflin-St Jeor BMR x activity factor + goal offset.
 // ponytail: fixed kcal offsets and 1.6 g/kg protein for everyone; make them
 // profile settings when someone needs a different rate or a clinical diet.
-export function targets({ sex, age, heightCm, weightKg, activity, goal }) {
+export function targets(rawProfile = {}) {
+  const p = rawProfile || {}
+  const sex = p.sex === 'female' ? 'female' : 'male'
+  const weightKg = Number(p.weightKg) > 0 ? Number(p.weightKg) : 70
+  const heightCm = Number(p.heightCm) > 0 ? Number(p.heightCm) : (sex === 'female' ? 165 : 175)
+  const age = Number(p.age) > 0 ? Number(p.age) : 28
+  const activity = (p.activity && ACTIVITY[p.activity]) ? p.activity : 'moderate'
+  const goal = (p.goal && GOAL[p.goal] !== undefined) ? p.goal : 'hold'
+
   const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + (sex === 'male' ? 5 : -161)
-  const kcal = Math.max(MIN_KCAL, Math.round(bmr * ACTIVITY[activity] + GOAL[goal]))
+  const activityFactor = ACTIVITY[activity] ?? 1.55
+  const goalOffset = GOAL[goal] ?? 0
+  const rawKcal = Math.round(bmr * activityFactor + goalOffset)
+  const kcal = Math.max(MIN_KCAL, Number.isFinite(rawKcal) ? rawKcal : 2000)
   const protein = Math.round(1.6 * weightKg)
   const fat = Math.round((kcal * 0.25) / 9)
   const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4))

@@ -34,6 +34,21 @@ test('targets: Mifflin-St Jeor, macros add up, floor holds', () => {
   assert.equal(targets({ ...p, goal: 'lose' }).kcal, 2259)
   const small = { sex: 'female', age: 60, heightCm: 150, weightKg: 45, activity: 'sedentary', goal: 'lose' }
   assert.equal(targets(small).kcal, 1200)
+
+  // Partial / missing profile fields never produce NaN
+  const partial = targets({ sex: 'male', weightKg: 76.875 })
+  assert.ok(Number.isFinite(partial.kcal) && partial.kcal > 1200)
+  assert.equal(partial.protein, 123)
+  assert.ok(Number.isFinite(partial.carbs) && partial.carbs > 0)
+  assert.ok(Number.isFinite(partial.fat) && partial.fat > 0)
+  assert.ok(Number.isFinite(partial.fibre) && partial.fibre > 0)
+
+  const empty = targets({})
+  assert.ok(Number.isFinite(empty.kcal) && empty.kcal >= 1200)
+  assert.ok(Number.isFinite(empty.protein) && empty.protein > 0)
+
+  const fromNull = targets(null)
+  assert.ok(Number.isFinite(fromNull.kcal) && fromNull.kcal >= 1200)
 })
 
 test('searchFoods: every word must match, prefix and short names first', () => {

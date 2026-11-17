@@ -166,12 +166,12 @@ export function ProfilePage() {
           </label>
           <label>
             Weight ({units.weight})
-            <input name="weight" type="number" min={wMin} max={wMax} step="0.1" required defaultValue={p.weightKg ? r1(weightFromKg(p.weightKg, units.weight)) : ''} placeholder={`in ${units.weight}`} />
+            <input name="weight" type="number" min={wMin} max={wMax} step="0.1" required defaultValue={(p.weightKg || latestWeight(weights)) ? r1(weightFromKg(p.weightKg || latestWeight(weights), units.weight)) : ''} placeholder={`in ${units.weight}`} />
           </label>
           {modules.weight && (
             <label>
               Goal weight ({units.weight})
-              <input name="goalWeight" type="number" min={wMin} max={wMax} step="0.1" defaultValue={p.goalWeightKg ? r1(weightFromKg(p.goalWeightKg, units.weight)) : ''} placeholder="Optional" />
+              <input name="goalWeight" type="number" min={wMin} max={wMax} step="0.1" defaultValue={(p.goalWeightKg || p.targetKg) ? r1(weightFromKg(p.goalWeightKg || p.targetKg, units.weight)) : ''} placeholder="Optional" />
             </label>
           )}
         </div>

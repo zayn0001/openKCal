@@ -7,6 +7,7 @@ import { scale, sum } from '../lib/nutrition'
 import { remainingKcal } from '../lib/targets'
 import { dayTargets, today, useStore } from '../store'
 import { useUI } from '../store/useUI'
+import { apiFetch } from '../api'
 import { useSync } from '../sync'
 
 const QUICK_PROMPTS = [
@@ -183,7 +184,7 @@ _These are built-in answers. Connect an AI provider in Settings → AI to ask an
 
 // Asks the server's coach; throws the server's own message when it fails.
 async function askCoach(body, signal) {
-  const res = await fetch('/api/ai/coach', {
+  const res = await apiFetch('/api/ai/coach', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

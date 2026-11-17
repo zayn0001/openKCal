@@ -208,7 +208,7 @@ export function UnitsPage() {
   )
 }
 
-export const PALETTE = ['lime', 'sky', 'orange', 'violet', 'pink', 'red', 'teal', 'gold']
+export const PALETTE = ['lime', 'sky', 'orange', 'violet', 'pink', 'red', 'teal', 'gold', 'white']
 export const PALETTE_COLORS = {
   lime: '#30d158',
   sky: '#0a84ff',
@@ -218,6 +218,7 @@ export const PALETTE_COLORS = {
   red: '#ff453a',
   teal: '#40c8e0',
   gold: '#ffd60a',
+  white: '#ffffff',
   green: '#30d158',
   blue: '#0a84ff',
   purple: '#bf5af2',

@@ -20,6 +20,9 @@ import { instanceKey, randomId } from './secure.js'
 
 // Where CI publishes the signed APK (see .github/workflows/release-apk.yml)
 const RELEASES_URL = 'https://github.com/zayn0001/openKCal/releases/latest/download'
+// The Capacitor WebView origins of the Android and iOS apps. They cannot use the cookie (another
+// origin), so they hold the session token and send it as a Bearer; see sessionToken().
+const APP_ORIGINS = new Set(['https://localhost', 'capacitor://localhost', 'http://localhost'])
 
 const VERSION = '0.3.0'
 const EMPTY = { profile: null, diary: {}, foods: [], weights: {}, water: {}, gone: [], settings: {} }
@@ -108,6 +111,10 @@ export async function createApp({
   }
 
   const cookieToken = (req) => /(?:^|;\s*)sid=([a-f0-9]{64})/.exec(req.headers.cookie || '')?.[1] || ''
+  // The browser's cookie, or the app's Bearer. A Bearer is never sent by a browser on its own, so
+  // accepting it opens no cross-site request path.
+  const sessionToken = (req) => cookieToken(req) || /^Bearer ([a-f0-9]{64})$/.exec(req.headers.authorization || '')?.[1] || ''
+  const fromApp = (req) => APP_ORIGINS.has(req.headers.origin)
   // The proxy appends the address it saw, so the last entry is the one a client cannot forge.
   const clientIp = (req) => (trustProxy && req.headers['x-forwarded-for']?.split(',').at(-1).trim()) || req.socket.remoteAddress
   const authLimit = limiter(20, 15 * 60_000)
@@ -120,10 +127,12 @@ export async function createApp({
   }
 
   async function signIn(req, res, uid, how) {
-    setCookie(req, res, await accounts.startSession(uid))
+    const token = await accounts.startSession(uid)
+    setCookie(req, res, token)
     // A new account's first sign-in is already in the log as the sign-up.
     if (how !== 'new') audit.log(`auth.login.${how}`, { uid, name: accounts.user(uid).name }, clientIp(req))
-    return { user: accounts.me(uid) }
+    // The phone app keeps the token itself; a web page never sees it (the cookie is HttpOnly).
+    return { user: accounts.me(uid), ...(fromApp(req) && { token }) }
   }
 
   // Sensitive changes need more than a session (which may be a copied cookie): the current
@@ -251,7 +260,7 @@ export async function createApp({
 
     'POST /api/logout': async (req, res, uid) => {
       await body(req, 100)
-      await accounts.endSession(cookieToken(req))
+      await accounts.endSession(sessionToken(req))
       if (uid) audit.log('auth.logout', { uid })
       res.setHeader('Set-Cookie', 'sid=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0')
       return { user: null }
@@ -682,10 +691,26 @@ export async function createApp({
     try {
       const { pathname } = new URL(req.url, 'http://x')
       if (!pathname.startsWith('/api/')) return await serveStatic(req, res, pathname)
+      // Only the phone app's own origins may call across origins. It carries no cookie, so
+      // Allow-Credentials is never set and a reflected origin cannot reach a cookie session.
+      if (fromApp(req)) {
+        res.setHeader('Access-Control-Allow-Origin', req.headers.origin)
+        res.setHeader('Vary', 'Origin')
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204, {
+            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Max-Age': '86400',
+            // Chrome asks before a page reaches a home-network address (a server on 192.168.x.x)
+            ...(req.headers['access-control-request-private-network'] === 'true' && { 'Access-Control-Allow-Private-Network': 'true' }),
+          })
+          return res.end()
+        }
+      }
       const route = `${req.method} ${pathname}`
       const handler = routes[route]
       if (!handler) throw new HttpError(404, 'Not found')
-      const uid = accounts.sessionUser(cookieToken(req))
+      const uid = accounts.sessionUser(sessionToken(req))
       if (!uid && !PUBLIC.has(route)) throw new HttpError(401, 'Sign in first')
       const out = await handler(req, res, uid)
       res.setHeader('Content-Type', 'application/json')

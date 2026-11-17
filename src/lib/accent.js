@@ -8,6 +8,7 @@ export const ACCENTS = {
   red: '#ff453a',
   teal: '#40c8e0',
   gold: '#ffd60a',
+  white: '#ffffff',
   // Backwards compatibility aliases
   green: '#30d158',
   blue: '#0a84ff',
@@ -23,6 +24,7 @@ export const ACCENT_NAMES = {
   red: 'Flame Red',
   teal: 'Ocean Teal',
   gold: 'Sun Gold',
+  white: 'White',
 }
 
 export const ACCENT_INK = {
@@ -34,6 +36,7 @@ export const ACCENT_INK = {
   red: '#ffffff',
   teal: '#000000',
   gold: '#000000',
+  white: '#000000',
   green: '#000000',
   blue: '#ffffff',
   purple: '#ffffff',
@@ -52,8 +55,10 @@ export function normalizeAccent(name) {
 export function applyAccent(el, accentKey, theme) {
   const norm = normalizeAccent(accentKey)
   el.dataset.accent = norm
-  const color = ACCENTS[norm] || ACCENTS.lime
-  const ink = ACCENT_INK[norm] || '#000000'
+  // White would vanish on the light theme's white background: there it is near-black, as in openGym
+  const inverted = norm === 'white' && theme === 'light'
+  const color = inverted ? '#1c1c1e' : ACCENTS[norm] || ACCENTS.lime
+  const ink = inverted ? '#ffffff' : ACCENT_INK[norm] || '#000000'
   el.style.setProperty('--acc', color)
   el.style.setProperty('--acc-ink', theme === 'light' && norm === 'gold' ? '#b08d00' : color)
   el.style.setProperty('--on-acc', ink)

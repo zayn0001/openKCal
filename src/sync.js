@@ -2,7 +2,7 @@
 // and you sign in, local changes are pushed and remote ones pulled.
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { api } from './api'
+import { api, normalizeServerUrl, serverBase, setRemote } from './api'
 import { KEYS, mergeState, pick } from './lib/state'
 import { EMPTY, useStore } from './store'
 
@@ -95,7 +95,27 @@ export async function refreshMe() {
 export async function signOut(everywhere = false) {
   await api('POST', everywhere ? '/api/logout/all' : '/api/logout', {}).catch(() => null)
   if (everywhere) await api('POST', '/api/logout', {}).catch(() => null)
+  if (serverBase()) setRemote({ base: serverBase() }) // the app drops its token, keeps the address
   useSync.setState({ user: null, rev: 0, dirty: false, error: '' })
+}
+
+/** The app: checks an openKCal server answers at that address, saves it and starts over against it. */
+export async function connectServer(raw) {
+  const base = normalizeServerUrl(raw)
+  if (!base) throw new Error('Enter a valid server address, like openkcal.example.com')
+  const me = await fetch(`${base}/api/me`).then((r) => r.json()).catch(() => null)
+  if (typeof me?.server?.signup !== 'string') throw new Error(`No openKCal server answered at ${base}. Check the address, and that the server is up to date.`)
+  setRemote({ base })
+  useSync.setState({ user: null, guest: false, rev: 0 })
+  location.reload() // sync starts once, at launch, against the server it finds
+}
+
+/** The app: signs out and goes back to keeping data on this phone only. */
+export async function disconnectServer() {
+  if (useSync.getState().user) await signOut()
+  setRemote(null)
+  useSync.setState({ user: null, guest: false, rev: 0, dirty: false })
+  location.reload()
 }
 
 /** Reset everything: on the server too when signed in, so other devices follow. */

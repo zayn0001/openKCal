@@ -436,3 +436,35 @@ test('created foods and recipe dishes by any user are shared and accessible to a
   assert.equal((await guest('GET', '/api/recipes')).body.recipes.length, 0)
 })
 
+
+test('the phone app signs in across origins with a Bearer token', async (t) => {
+  const { base, client } = await start(t, { signup: 'open' })
+  const password = pw()
+  await client()('POST', '/api/signup', { name: 'nia', password })
+  const app = { Origin: 'https://localhost', 'Content-Type': 'application/json' }
+
+  // Preflight: the app's origin is allowed, any other site is not
+  const pre = await fetch(base + '/api/login', { method: 'OPTIONS', headers: { Origin: 'https://localhost', 'Access-Control-Request-Headers': 'authorization' } })
+  assert.equal(pre.status, 204)
+  assert.equal(pre.headers.get('access-control-allow-origin'), 'https://localhost')
+  assert.match(pre.headers.get('access-control-allow-headers'), /Authorization/)
+  assert.equal(pre.headers.get('access-control-allow-credentials'), null)
+  const evil = await fetch(base + '/api/me', { headers: { Origin: 'https://evil.example' } })
+  assert.equal(evil.headers.get('access-control-allow-origin'), null)
+
+  // Only the app gets the token in the body; a web page relies on the HttpOnly cookie
+  assert.equal((await client()('POST', '/api/login', { name: 'nia', password })).body.token, undefined)
+  const login = await (await fetch(base + '/api/login', { method: 'POST', headers: app, body: JSON.stringify({ name: 'nia', password }) })).json()
+  assert.match(login.token, /^[a-f0-9]{64}$/)
+
+  const bearer = { ...app, Authorization: `Bearer ${login.token}` }
+  const me = await fetch(base + '/api/me', { headers: bearer })
+  assert.equal(me.headers.get('access-control-allow-origin'), 'https://localhost')
+  assert.equal((await me.json()).user.name, 'nia')
+  assert.equal((await fetch(base + '/api/state', { headers: bearer })).status, 200)
+  assert.equal((await fetch(base + '/api/state', { headers: { ...app, Authorization: 'Bearer nope' } })).status, 401)
+
+  // Signing out ends that session
+  await fetch(base + '/api/logout', { method: 'POST', headers: bearer, body: '{}' })
+  assert.equal((await (await fetch(base + '/api/me', { headers: bearer })).json()).user, null)
+})

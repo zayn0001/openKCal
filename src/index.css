@@ -191,6 +191,9 @@
 :root[data-accent="gold"] {
   --acc: #ffd60a; --acc-2: #ccab08; --on-acc: #000000; --acc-ink: #b08d00;
 }
+:root[data-accent="white"] {
+  --acc: #ffffff; --acc-2: #d1d1d6; --on-acc: #000000; --acc-ink: var(--acc);
+}
 
 /* ---------------- Base Reset ---------------- */
 *, *::before, *::after {
@@ -1825,6 +1828,7 @@ select:not(.activity-select):focus {
 .swatch:active {
   transform: scale(var(--press-scale-sm));
 }
+.swatch.white { color: #000; } /* the check mark has to show on a white swatch */
 .swatch[aria-checked="true"] {
   border-color: var(--label);
   box-shadow: 0 0 0 2px var(--surface-2);

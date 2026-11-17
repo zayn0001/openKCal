@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Icon from './components/Icon'
-import { call, passkeyLogin, passkeysSupported, registerPasskey } from './api'
-import { signedIn, useSync } from './sync'
+import { call, passkeyLogin, passkeysSupported, registerPasskey, serverBase } from './api'
+import { disconnectServer, signedIn, useSync } from './sync'
 
 // Signing in and creating an account. What is offered follows the server: passkeys need its
 // ORIGIN set, new accounts need an invite code unless sign-up is open, and "without an account"
@@ -40,6 +40,14 @@ export default function Login({ full = false, onOpenWelcome }) {
           <img src="/favicon.svg" alt="" width="56" height="56" />
           <h1>openKCal</h1>
           <p className="muted">Nutrition & calorie companion to openGym</p>
+          {serverBase() && (
+            <p className="muted">
+              Signing in to <strong>{serverBase().replace(/^https?:\/\//, '')}</strong> ·{' '}
+              <button type="button" className="link" onClick={() => disconnectServer()}>
+                Use a different server
+              </button>
+            </p>
+          )}
         </header>
       )}
       {['signin', 'signup'].includes(mode) && (

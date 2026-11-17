@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { call, passkeysSupported, registerPasskey, withProof } from '../api'
+import { call, isNativeApp, passkeysSupported, registerPasskey, serverBase, withProof } from '../api'
 import Dialog from '../Dialog'
 import { eventWords } from '../lib/events'
 import Login from '../Login'
-import { refreshMe, signOut, sync, useSync } from '../sync'
+import { connectServer, disconnectServer, refreshMe, signOut, sync, useSync } from '../sync'
 
 const when = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 
@@ -109,6 +109,55 @@ function DeviceCode({ user }) {
   )
 }
 
+// The phone app: which openKCal server to sync with. Signing in then works as on the web, with a
+// password or a code from a signed-in device; passkeys stay in the browser (they belong to the
+// server's address, and the app runs on its own).
+export function ServerConnect() {
+  const base = serverBase()
+  const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false)
+  const run = (fn) => async (e) => {
+    e?.preventDefault?.()
+    setBusy(true)
+    setMsg('')
+    try {
+      await fn(e)
+    } catch (err) {
+      setMsg(err.message)
+      setBusy(false)
+    }
+  }
+  return (
+    <section className="card">
+      <h2>openKCal server</h2>
+      {base ? (
+        <>
+          <p className="muted">
+            Syncing with <strong>{base.replace(/^https?:\/\//, '')}</strong>.
+          </p>
+          <div className="actions start">
+            <button type="button" className="ghost danger" disabled={busy} onClick={run(() => disconnectServer())}>
+              Disconnect
+            </button>
+          </div>
+        </>
+      ) : (
+        <form onSubmit={run((e) => connectServer(new FormData(e.target).get('url')))}>
+          <p className="muted">Your data stays on this phone. To sync it with your other devices, connect to your openKCal server and sign in.</p>
+          <label>
+            Server address
+            <input name="url" required inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck="false" placeholder="openkcal.example.com" />
+          </label>
+          <div className="actions">
+            <button disabled={busy} className="btn primary">{busy ? 'Connecting…' : 'Connect'}</button>
+          </div>
+        </form>
+      )}
+      {msg && <p role="alert">{msg}</p>}
+    </section>
+  )
+}
+
 export function AccountPage() {
   const { user, server, error, dirty } = useSync()
   const [activity, setActivity] = useState(null)
@@ -116,16 +165,26 @@ export function AccountPage() {
   const [copied, setCopied] = useState(false)
   const [pwProof, setPwProof] = useState(null) // set while the new-password dialog is open
 
+  const app = isNativeApp()
   if (!server)
-    return (
+    return app && server === false ? (
+      <ServerConnect />
+    ) : (
       <section className="card">
         <p className="muted">{server === null ? 'Checking for a server…' : 'openKCal is running locally in this browser without a server, so there is no account: your data stays on this device. Run the openKCal server to sync devices.'}</p>
       </section>
     )
-  if (!user) return <Login />
+  if (!user)
+    return (
+      <>
+        {app && <ServerConnect />}
+        <Login />
+      </>
+    )
 
   return (
     <>
+      {app && <ServerConnect />}
       <section className="card">
         <h2>{user.name}</h2>
         <p className="muted" role="status">

@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { isNativeApp } from '../api'
 import Icon from '../components/Icon'
+import { newVersionReady } from '../lib/update'
 import { MODULES, PRESETS, presetOf } from '../lib/settings'
 import { ACTIVITY } from '../lib/targets'
 import { fmtEnergy, heightFromCm, heightToCm, weightFromKg, weightToKg } from '../lib/units'
 import { dayTargets, latestWeight, useSettings, useStore } from '../store'
+import { useUI } from '../store/useUI'
 import { useSync } from '../sync'
 
 const r1 = (v) => Math.round(v * 10) / 10
@@ -326,6 +329,18 @@ export function AboutPage() {
         <a href="/download/openkcal.apk" download className="btn sm primary" style={{ textDecoration: 'none' }}>
           Download Android APK
         </a>
+        {!isNativeApp() && (
+          <button
+            type="button"
+            className="btn sm tinted"
+            onClick={async () => {
+              if (await newVersionReady()) location.reload()
+              else useUI.getState().toast('You have the latest version')
+            }}
+          >
+            Check for updates
+          </button>
+        )}
       </div>
       <h3>Food data</h3>
       <ul className="plain">

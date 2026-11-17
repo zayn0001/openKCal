@@ -155,3 +155,10 @@ test('markdown: inline marks, lists, nested bullets, headings', async () => {
   assert.deepEqual(b[2].items, [{ text: '**One**', sub: false }, { text: 'sub', sub: true }, { text: 'Two', sub: false }])
   assert.equal(b[3].items.length, 2)
 })
+
+test('bundleOf finds the main bundle a build points at', async () => {
+  const { bundleOf } = await import('./update.js')
+  assert.equal(bundleOf('<script type="module" crossorigin src="/assets/index-BmQor53w.js"></script>'), '/assets/index-BmQor53w.js')
+  assert.equal(bundleOf('<script type="module" src="/src/main.jsx"></script>'), null) // dev server
+  assert.equal(bundleOf(''), null)
+})

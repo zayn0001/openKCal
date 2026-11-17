@@ -214,7 +214,7 @@ html, body {
 main {
   max-width: 640px;
   margin: 0 auto;
-  padding: calc(10px + var(--sat)) 16px calc(92px + var(--sab));
+  padding: calc(10px + var(--sat)) 16px calc(100px + var(--sab));
   min-height: 100vh;
 }
 
@@ -955,7 +955,7 @@ select:not(.activity-select):focus {
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
-  padding: 7px 6px calc(6px + var(--sab));
+  padding: 7px 6px calc(12px + var(--sab)); /* clear of the iPhone home indicator */
   background: color-mix(in srgb, var(--bg-el) 94%, transparent);
   -webkit-backdrop-filter: saturate(180%) blur(12px);
   backdrop-filter: saturate(180%) blur(12px);
@@ -1040,7 +1040,7 @@ select:not(.activity-select):focus {
   #tabbar {
     left: 50%;
     right: auto;
-    bottom: 16px;
+    bottom: calc(16px + var(--sab));
     transform: translateX(-50%);
     width: 540px;
     border: var(--hair) solid var(--sep-op);
@@ -1052,7 +1052,7 @@ select:not(.activity-select):focus {
 
 @media (min-width: 680px) {
   .chat-input-bar {
-    bottom: 110px;
+    bottom: calc(110px + var(--sab));
     border-radius: var(--r-xl);
     width: 540px;
   }
@@ -1737,7 +1737,7 @@ select:not(.activity-select):focus {
 .chat-input-bar {
   position: fixed;
   z-index: 49;
-  bottom: calc(86px + var(--sab)); /* clears the tab bar and its raised centre button */
+  bottom: calc(92px + var(--sab)); /* clears the tab bar and its raised centre button */
   left: 50%;
   transform: translateX(-50%);
   width: min(640px, 100vw);

@@ -112,7 +112,7 @@ export default function Onboarding({ onExit }) {
               marginBottom: 16,
             }}
           >
-            <Icon name="dumbbell" size={14} /> Open-Source Companion to openGym
+            <Icon name="opengym" size={14} /> Open-Source Companion to openGym
           </span>
 
           <h1
@@ -262,7 +262,7 @@ export default function Onboarding({ onExit }) {
 
           <div className="card" style={{ padding: 18 }}>
             <span className="lrow-i" style={{ '--tint': 'var(--lime)', marginBottom: 12 }}>
-              <Icon name="dumbbell" />
+              <Icon name="opengym" />
             </span>
             <h3 style={{ fontSize: 'var(--fs-body)', fontWeight: 700, margin: '0 0 6px' }}>openGym Live Auto-Sync</h3>
             <p className="muted" style={{ fontSize: 'var(--fs-subhead)', margin: 0, lineHeight: 1.5 }}>

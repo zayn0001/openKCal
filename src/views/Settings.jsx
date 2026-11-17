@@ -13,7 +13,7 @@ import { useSync } from '../sync'
 
 const PAGES = {
   profile: { title: 'Profile & Targets', hint: 'Body, activity and fitness goal', icon: 'person', tint: 'var(--blue)', Page: ProfilePage },
-  opengym: { title: 'openGym Connection', hint: 'Sync workouts, body weight & measurements', icon: 'dumbbell', tint: 'var(--lime)', Page: OpenGymPage },
+  opengym: { title: 'openGym Connection', hint: 'Sync workouts, body weight & measurements', icon: 'opengym', tint: 'var(--lime)', Page: OpenGymPage },
   welcome: { title: 'Welcome Guide & APK', hint: 'Overview, features & Android APK download', icon: 'sparkles', tint: 'var(--turmeric)', Page: Onboarding },
   modules: { title: 'Modules', hint: 'Turn parts of openKCal on and off', icon: 'list', tint: 'var(--green)', Page: ModulesPage },
   units: { title: 'Units', hint: 'kcal or kJ, kg or lb, cm or inches', icon: 'scale', tint: 'var(--orange)', Page: UnitsPage },

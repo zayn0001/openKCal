@@ -181,7 +181,7 @@ export default function App() {
                   onClick={() => goSettings('opengym')}
                   title="openGym Synced"
                 >
-                  <Icon name="dumbbell" className="font-lime" size={15} />
+                  <Icon name="opengym" className="font-lime" size={15} />
                   <span>Gym</span>
                 </button>
               )}

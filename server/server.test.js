@@ -14,7 +14,7 @@ import { verifySignature } from './secure.js'
 const listen = (server) => new Promise((ok) => server.listen(0, '127.0.0.1', () => ok(`http://127.0.0.1:${server.address().port}`)))
 const pw = () => randomBytes(12).toString('hex')
 const empty = { profile: null, diary: {}, foods: [], weights: {}, water: {}, gone: [], settings: {} }
-const tmp = () => mkdtemp(path.join(tmpdir(), 'thally-'))
+const tmp = () => mkdtemp(path.join(tmpdir(), 'openkcal-'))
 
 async function start(t, opts = {}) {
   const dataDir = opts.dataDir || (await tmp())

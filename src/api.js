@@ -1,4 +1,4 @@
-// Talking to the Thally server: one fetch wrapper, the passkey ceremonies, and the "confirm it's
+// Talking to the openKCal server: one fetch wrapper, the passkey ceremonies, and the "confirm it's
 // you" prompt that sensitive account changes need (the password, or a passkey of the account).
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser'
 import { create } from 'zustand'

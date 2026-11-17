@@ -1,4 +1,4 @@
-package app.thally.tracker;
+package app.openkcal.tracker;
 
 import com.getcapacitor.BridgeActivity;
 

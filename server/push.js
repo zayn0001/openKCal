@@ -147,7 +147,7 @@ export async function createPush({ dataDir, subject = 'mailto:admin@localhost', 
     async subscribed(uid, endpoint) {
       return (await load(uid)).subs.some((s) => s.endpoint === endpoint)
     },
-    test: (uid) => sendTo(uid, { title: 'Thally', body: 'Reminders work on this device.', tag: 'test' }),
+    test: (uid) => sendTo(uid, { title: 'openKCal', body: 'Reminders work on this device.', tag: 'test' }),
     forget: (uid) => writes(() => rm(file(uid), { force: true })),
     stop: () => clearInterval(timer),
   }

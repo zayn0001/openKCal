@@ -15,7 +15,6 @@ export default function Onboarding({ onExit }) {
         .catch(() => null)
 
     tryFetch('/download/openkcal.json')
-      .then((a) => a || tryFetch('/download/thally.json'))
       .then((a) => {
         if (!a) return
         setApkMeta({

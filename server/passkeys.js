@@ -1,5 +1,5 @@
 // Passkey (WebAuthn) ceremonies. Passkeys are bound to the server's address, so they need ORIGIN
-// set to exactly what people type (https://thally.example.com, or http://localhost:5173 in dev).
+// set to exactly what people type (https://openkcal.example.com, or http://localhost:5173 in dev).
 // Without ORIGIN they are off and the app shows password sign-in only.
 import {
   generateAuthenticationOptions,
@@ -11,7 +11,7 @@ import { HttpError } from './http.js'
 
 const CHALLENGE_MINUTES = 5
 
-export function createPasskeys({ origin, rpName = 'Thally' }) {
+export function createPasskeys({ origin, rpName = 'openKCal' }) {
   if (!origin) return null
   const rpID = new URL(origin).hostname
   // challenge -> { purpose, data, expires }; one use each.

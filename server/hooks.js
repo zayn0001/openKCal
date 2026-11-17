@@ -114,7 +114,7 @@ export async function createHooks({ dataDir, key, allowLan = () => false }) {
         allowLan: allowLan(job.uid),
         headers: {
           'content-type': 'application/json',
-          'user-agent': 'Thally-Webhook/1',
+          'user-agent': 'openKCal-Webhook/1',
           'x-thally-event': job.type,
           'x-thally-delivery': job.deliveryId,
           'x-thally-signature': signature(secret, job.body),

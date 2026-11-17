@@ -124,7 +124,7 @@ export function IntegrationsPage() {
             <h2>Add a webhook</h2>
             <label>
               URL
-              <input name="url" required inputMode="url" placeholder="https://ha.example.com/api/webhook/thally-…" />
+              <input name="url" required inputMode="url" placeholder="https://ha.example.com/api/webhook/openkcal-…" />
             </label>
             <label>
               Name (optional)

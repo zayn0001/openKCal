@@ -19,6 +19,7 @@ export async function instanceKey(dataDir) {
     secret = crypto.randomBytes(32).toString('hex')
     await writeFile(file, secret, { mode: 0o600 })
   }
+  // 'thally' is the app's old name, kept on purpose: changing it would make every stored value unreadable
   return Buffer.from(crypto.hkdfSync('sha256', Buffer.from(secret), Buffer.from('thally'), Buffer.from('sealed values v1'), 32))
 }
 

@@ -1,4 +1,4 @@
-// Optional account sync. The app works without it; when the page is served by a Thally server
+// Optional account sync. The app works without it; when the page is served by an openKCal server
 // and you sign in, local changes are pushed and remote ones pulled.
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'

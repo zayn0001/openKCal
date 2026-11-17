@@ -1,4 +1,4 @@
-// Thally server: serves the built app, keeps accounts and each person's synced state, and runs the
+// openKCal server: serves the built app, keeps accounts and each person's synced state, and runs the
 // optional extras (AI on the person's own provider, webhooks, reminders). Plain node:http, files on
 // disk under DATA_DIR, no database. Every route is listed in `routes` below.
 import { createReadStream } from 'node:fs'
@@ -633,7 +633,7 @@ export async function createApp({
       res.setHeader('Cache-Control', 'no-cache')
       if (extra.endsWith('.apk')) {
         res.setHeader('Content-Length', size)
-        res.setHeader('Content-Disposition', 'attachment; filename="thally.apk"')
+        res.setHeader('Content-Disposition', 'attachment; filename="openkcal.apk"')
       }
       if (req.method === 'HEAD') return res.end()
       return createReadStream(extra).on('error', () => res.destroy()).pipe(res)
@@ -708,7 +708,7 @@ export async function main() {
     pushSubject: env.PUSH_CONTACT ? `mailto:${env.PUSH_CONTACT}` : undefined,
   })
   const port = Number(env.PORT) || 3000
-  app.listen(port, () => console.log(`Thally ${VERSION} on http://localhost:${port} (sign-up: ${signup}, passkeys: ${env.ORIGIN ? 'on' : 'off, set ORIGIN'})`))
+  app.listen(port, () => console.log(`openKCal ${VERSION} on http://localhost:${port} (sign-up: ${signup}, passkeys: ${env.ORIGIN ? 'on' : 'off, set ORIGIN'})`))
   // A deploy or a host putting the service to sleep: finish what is in flight, then exit.
   process.once('SIGTERM', () => app.close(() => process.exit(0)))
 }

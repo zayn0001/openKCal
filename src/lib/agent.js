@@ -1,4 +1,4 @@
-// "Tell Thally what you ate": the meal agent's tools, instructions, and the check that turns
+// "Tell openKCal what you ate": the meal agent's tools, instructions, and the check that turns
 // whatever the model proposes into something safe to show. The agent only ever proposes: the
 // person reviews every entry and every new dish, and nothing is saved until they confirm.
 import { buildDish } from './dish.js'

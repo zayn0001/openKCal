@@ -88,7 +88,7 @@ test('the agent searches, then proposes; nothing is saved by the server', async 
   t.after(() => stub.close())
   process.env.ANTHROPIC_BASE_URL = stubUrl
 
-  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thally-')), pushTickMs: 0 })
+  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'openkcal-')), pushTickMs: 0 })
   const base = await listen(app)
   t.after(() => app.close())
   const me = client(base)
@@ -125,7 +125,7 @@ test('coach sends the conversation so far and returns the answer', async (t) => 
   })
   const stubUrl = await listen(stub)
   t.after(() => stub.close())
-  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'thally-')), pushTickMs: 0 })
+  const app = await createApp({ dataDir: await mkdtemp(path.join(tmpdir(), 'openkcal-')), pushTickMs: 0 })
   const base = await listen(app)
   t.after(() => app.close())
   const me = client(base)

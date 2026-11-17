@@ -651,7 +651,7 @@ export function cleanHeaders(raw) {
   for (const [name, value] of entries) {
     const n = name.trim().toLowerCase()
     if (!/^[!#$%&'*+\-.^_`|~0-9a-z]{1,64}$/.test(n)) throw new HttpError(400, `Bad header name: ${name}`)
-    if (RESERVED.has(n)) throw new HttpError(400, `That header is set by Thally itself: ${name}`)
+    if (RESERVED.has(n)) throw new HttpError(400, `That header is set by openKCal itself: ${name}`)
     if (typeof value !== 'string' || !value.trim() || value.length > 500 || /[\r\n]/.test(value)) throw new HttpError(400, `Header ${name} needs a short value`)
     out[n] = value.trim()
   }

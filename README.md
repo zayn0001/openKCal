@@ -148,8 +148,10 @@ npx cap sync android
 cd android && ./gradlew assembleRelease
 ```
 
-Automated release builds and signing are handled via GitHub Actions in [`.github/workflows/release-apk.yml`](.github/workflows/release-apk.yml) utilizing GitHub repository secrets:
-- `ANDROID_KEYSTORE_BASE64`
+Every push to `main` runs [`.github/workflows/release-apk.yml`](.github/workflows/release-apk.yml): tests, a signed release build, and a new GitHub release (`v<version>-build.<n>`, marked latest) with `openkcal.apk`, its SHA-256 and `openkcal.json`. The version code rises with every build, so each APK installs over the previous one.
+
+It signs with your release keystore, stored as repository secrets (without them the run stops, since an unsigned APK will not install):
+- `ANDROID_KEYSTORE_BASE64`: the keystore file, base64-encoded (`base64 -w0 release.jks`)
 - `KEYSTORE_PASSWORD`
 - `KEY_ALIAS`
 - `KEY_PASSWORD`

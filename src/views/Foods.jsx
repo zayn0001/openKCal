@@ -176,7 +176,7 @@ export default function Foods() {
       </div>
 
       {/* Action Buttons */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 14 }}>
+      <div className="food-actions">
         <button
           type="button"
           className="btn primary"
@@ -189,7 +189,7 @@ export default function Foods() {
           className="btn tinted"
           onClick={() => setScanningLabel(true)}
         >
-          <Icon name="barcode" /> Scan Label (AI)
+          <Icon name="barcode" /> Scan Label
         </button>
         <button
           type="button"

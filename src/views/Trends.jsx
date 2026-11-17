@@ -230,7 +230,7 @@ export default function Trends() {
           </div>
         </div>
         <div style={{ textAlign: 'end' }}>
-          <span className="font-acc" style={{ fontWeight: 700, fontSize: 'var(--fs-title3)' }}>
+          <span className="font-acc" style={{ fontWeight: 700, fontSize: 'var(--fs-title3)', whiteSpace: 'nowrap' }}>
             {streak > 0 ? 'On fire' : 'Log a meal'}
           </span>
         </div>
@@ -269,7 +269,7 @@ export default function Trends() {
                   </span>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div className="card-head-actions" style={{ gap: 6 }}>
                 <button
                   type="button"
                   className="btn sm ghost"

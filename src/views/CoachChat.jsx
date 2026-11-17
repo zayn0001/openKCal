@@ -1,9 +1,11 @@
 import { useRef, useState, useEffect } from 'react'
 import Icon from '../components/Icon'
 import LabelScanner from '../components/LabelScanner'
+import Markdown from '../components/Markdown'
 import PhotoLog from '../PhotoLog'
 import { scale, sum } from '../lib/nutrition'
-import { today, useStore } from '../store'
+import { remainingKcal } from '../lib/targets'
+import { dayTargets, today, useStore } from '../store'
 import { useUI } from '../store/useUI'
 import { api, useSync } from '../sync'
 
@@ -181,6 +183,8 @@ export default function CoachChat() {
   const coachChat = useStore((s) => s.coachChat) || []
   const profile = useStore((s) => s.profile)
   const diary = useStore((s) => s.diary[today()]) || []
+  const weights = useStore((s) => s.weights)
+  const exercises = useStore((s) => s.exercises?.[today()]) || []
   const { addCoachMessage, clearCoachChat, addEntry } = useStore.getState()
   const { toast } = useUI.getState()
   const user = useSync((s) => s.user)
@@ -192,9 +196,10 @@ export default function CoachChat() {
   const [labelScanning, setLabelScanning] = useState(false)
   const endRef = useRef(null)
 
+  // Same numbers as the Diary ring: profile targets, minus food, plus exercise burned
   const eaten = sum(diary)
-  const targetKcal = profile?.goal === 'lose' ? 1700 : 2100
-  const remaining = targetKcal - Math.round(eaten.kcal || 0)
+  const burned = exercises.reduce((acc, x) => acc + (x.kcal || 0), 0)
+  const { target: targetKcal, remaining } = remainingKcal(dayTargets(profile, weights), eaten, burned)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -210,7 +215,7 @@ export default function CoachChat() {
 
     try {
       if (aiReady) {
-        const context = `Eaten today: ${Math.round(eaten.kcal)} kcal (${Math.round(eaten.protein)}g protein, ${Math.round(eaten.carbs)}g carbs, ${Math.round(eaten.fat)}g fat). Remaining target: ${remaining} kcal. Goal: ${profile?.goal || 'maintain'}.`
+        const context = `Eaten today: ${Math.round(eaten.kcal)} kcal (${Math.round(eaten.protein)}g protein, ${Math.round(eaten.carbs)}g carbs, ${Math.round(eaten.fat)}g fat). Daily target: ${targetKcal} kcal. Burned by exercise: ${Math.round(burned)} kcal. Remaining: ${remaining} kcal (use this exact number). Goal: ${profile?.goal || 'hold'}.`
         const r = await api('POST', '/api/ai/coach', { prompt: text, context }).catch(() => null)
 
         if (r?.ok && r.body?.text) {
@@ -367,7 +372,7 @@ export default function CoachChat() {
         {/* Message history */}
         {coachChat.map((m) => (
           <div key={m.id} className={`chat-msg ${m.role}`}>
-            <span style={{ whiteSpace: 'pre-wrap' }}>{m.text}</span>
+            {m.role === 'coach' ? <Markdown text={m.text} /> : <span style={{ whiteSpace: 'pre-wrap' }}>{m.text}</span>}
           </div>
         ))}
 

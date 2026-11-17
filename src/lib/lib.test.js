@@ -142,3 +142,16 @@ test('logStreak counts back from today, tolerating an unlogged today', async () 
   assert.equal(logStreak({ '2026-11-16': e, '2026-11-15': e, '2026-11-13': e }, now), 2)
   assert.equal(logStreak({ '2026-11-15': e }, now), 0)
 })
+
+test('markdown: inline marks, lists, nested bullets, headings', async () => {
+  const { parseBlocks, parseInline } = await import('./markdown.js')
+  assert.deepEqual(parseInline('a **b** *c* `d`'), [
+    { t: 'text', v: 'a ' }, { t: 'b', v: 'b' }, { t: 'text', v: ' ' }, { t: 'i', v: 'c' }, { t: 'text', v: ' ' }, { t: 'code', v: 'd' },
+  ])
+  assert.deepEqual(parseInline('2 * 3 = 6'), [{ t: 'text', v: '2 * 3 = 6' }])
+  const b = parseBlocks('## Plan\nIntro line\n\n1. **One**\n   • sub\n2. Two\n\n• x\n- y')
+  assert.deepEqual(b.map((x) => x.type), ['h', 'p', 'ol', 'ul'])
+  assert.equal(b[0].text, 'Plan')
+  assert.deepEqual(b[2].items, [{ text: '**One**', sub: false }, { text: 'sub', sub: true }, { text: 'Two', sub: false }])
+  assert.equal(b[3].items.length, 2)
+})

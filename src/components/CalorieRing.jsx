@@ -1,9 +1,10 @@
+import { remainingKcal } from '../lib/targets'
+
 export default function CalorieRing({ eaten = {}, goal, burned = 0, units = { energy: 'kcal' } }) {
-  const targetKcal = goal && Number.isFinite(goal.kcal) && goal.kcal > 0 ? Math.round(goal.kcal) : 2000
+  const { target: targetKcal, remaining } = remainingKcal(goal, eaten, burned)
   const eatenKcal = Math.round(Number(eaten?.kcal) || 0)
   const burnedKcal = Math.round(Number(burned) || 0)
   const netKcal = eatenKcal - burnedKcal
-  const remaining = targetKcal - eatenKcal + burnedKcal
   const isOver = remaining < 0
 
   // SVG Gauge calculations

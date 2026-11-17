@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { withDefaults } from './lib/settings'
+import { targets } from './lib/targets'
 import { isState, pick } from './lib/state'
 
 // Local calendar day as YYYY-MM-DD (en-CA formats dates that way).
@@ -8,6 +9,9 @@ export const today = () => new Date().toLocaleDateString('en-CA')
 
 // Most recent weigh-in, or undefined. ISO dates sort as strings.
 export const latestWeight = (weights = {}) => weights[Object.keys(weights).sort().at(-1)]
+// Daily targets from the profile, using the latest weigh-in when there is one.
+export const dayTargets = (profile, weights) =>
+  profile && targets({ ...profile, weightKg: latestWeight(weights) ?? profile.weightKg })
 
 export const EMPTY = {
   profile: null,

@@ -13,9 +13,8 @@ import PhotoLog from '../PhotoLog'
 import LabelScanner from '../components/LabelScanner'
 import Nutrition from '../Nutrition'
 import { per100Of, scale, sum } from '../lib/nutrition'
-import { targets } from '../lib/targets'
 import { shiftDate, weekSummary } from '../lib/week'
-import { latestWeight, today, useSettings, useStore } from '../store'
+import { dayTargets, today, useSettings, useStore } from '../store'
 import { useUI } from '../store/useUI'
 import { api, useSync } from '../sync'
 
@@ -162,7 +161,7 @@ export default function Diary() {
   const { openSheet, toast } = useUI.getState()
 
   const eaten = sum(entries)
-  const goal = profile && targets({ ...profile, weightKg: latestWeight(weights) ?? profile.weightKg })
+  const goal = dayTargets(profile, weights)
 
   // Calculate dates for week scrubber
   const curDateObj = new Date(date + 'T12:00:00')

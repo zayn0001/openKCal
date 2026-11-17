@@ -35,9 +35,15 @@ export default function Login({ full = false, onOpenWelcome }) {
 
   return (
     <section className={full ? 'card login' : 'card'}>
-      {full && <h2 className="hero">Welcome to openKCal</h2>}
+      {full && (
+        <header className="login-brand">
+          <img src="/favicon.svg" alt="" width="56" height="56" />
+          <h1>openKCal</h1>
+          <p className="muted">Nutrition & calorie companion to openGym</p>
+        </header>
+      )}
       {['signin', 'signup'].includes(mode) && (
-        <div className="segmented" role="tablist">
+        <div className="segmented login-tabs" role="tablist">
           {tabs.map(([m, label]) => (
             <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => setMode(m)}>
               {label}
@@ -57,24 +63,23 @@ export default function Login({ full = false, onOpenWelcome }) {
               Password
               <input name="password" type="password" required autoComplete="current-password" />
             </label>
-            <div className="actions">
+            <div className="actions login-actions">
+              <button disabled={busy} className="btn primary">Sign in</button>
               {passkeys && (
-                <button type="button" className="ghost" disabled={busy} onClick={run(() => passkeyLogin())}>
-                  Use a passkey
+                <button type="button" className="btn" disabled={busy} onClick={run(() => passkeyLogin())}>
+                  <Icon name="key" /> Use a passkey
                 </button>
               )}
-              <button disabled={busy} className="btn primary">Sign in</button>
             </div>
           </form>
-          <p className="muted">
+          <div className="login-links">
             <button type="button" className="link" onClick={() => setMode('reset')}>
               Have a reset code?
-            </button>{' '}
-            ·{' '}
+            </button>
             <button type="button" className="link" onClick={() => setMode('device')}>
               Have a code from your other device?
             </button>
-          </p>
+          </div>
         </>
       )}
 
@@ -155,7 +160,7 @@ export default function Login({ full = false, onOpenWelcome }) {
       {problem && mode !== 'signup' && <p role="alert">{problem}</p>}
 
       {full && (
-        <p className="muted center">
+        <p className="login-foot">
           <button
             type="button"
             className="link"
@@ -173,11 +178,11 @@ export default function Login({ full = false, onOpenWelcome }) {
       )}
 
       {full && server?.guests && (
-        <p className="muted center">
+        <p className="login-foot">
           <button type="button" className="link" onClick={() => useSync.setState({ guest: true })}>
             Use without an account
-          </button>{' '}
-          (everything stays in this browser)
+          </button>
+          <small>Everything stays in this browser</small>
         </p>
       )}
     </section>

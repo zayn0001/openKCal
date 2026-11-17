@@ -89,7 +89,8 @@ Your recommendations should be:
 - Structured with clear bullet points and actionable portion advice.
 - Considerate of wholesome whole foods, adequate protein, hydration, fiber, and healthy balance.
 - Generic and globally applicable.
-- Direct, warm, and concise without unnecessary fluff or lecturing.`
+- Direct, warm, and concise without unnecessary fluff or lecturing.
+When the user's daily context gives calorie or macro numbers, quote them exactly as given; never recompute or estimate your own.`
 
 const MAX_ROUNDS = 10
 const TOO_MANY = 'The model took too many steps. Try describing the meal more simply.'

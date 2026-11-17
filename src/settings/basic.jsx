@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
 import { MODULES, PRESETS, presetOf } from '../lib/settings'
-import { ACTIVITY, targets } from '../lib/targets'
+import { ACTIVITY } from '../lib/targets'
 import { fmtEnergy, heightFromCm, heightToCm, weightFromKg, weightToKg } from '../lib/units'
-import { latestWeight, useSettings, useStore } from '../store'
+import { dayTargets, latestWeight, useSettings, useStore } from '../store'
 import { useSync } from '../sync'
 
 const r1 = (v) => Math.round(v * 10) / 10
@@ -46,7 +46,7 @@ export function ProfilePage() {
   const [goal, setGoal] = useState(p.goal || 'hold')
   const [activity, setActivity] = useState(p.activity || 'light')
 
-  const t = profile && targets({ ...profile, weightKg: latestWeight(weights) ?? profile.weightKg })
+  const t = dayTargets(profile, weights)
   const wMin = units.weight === 'lb' ? 66 : 30
   const wMax = units.weight === 'lb' ? 660 : 300
 

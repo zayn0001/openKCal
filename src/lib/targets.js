@@ -24,3 +24,9 @@ export function targets(rawProfile = {}) {
   const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4))
   return { kcal, protein, carbs, fat, fibre: Math.round((kcal / 1000) * 14) }
 }
+
+// Calories left today: the one formula the Diary ring and the coach both use.
+export function remainingKcal(goal, eaten = {}, burned = 0) {
+  const target = goal && Number.isFinite(goal.kcal) && goal.kcal > 0 ? Math.round(goal.kcal) : 2000
+  return { target, remaining: target - Math.round(Number(eaten?.kcal) || 0) + Math.round(Number(burned) || 0) }
+}

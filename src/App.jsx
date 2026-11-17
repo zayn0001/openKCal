@@ -7,6 +7,7 @@ import QuickAddModal from './components/QuickAddModal'
 import Login from './Login'
 import ProofPrompt from './ProofPrompt'
 import { applyAccent } from './lib/accent'
+import { logStreak } from './lib/nutrition'
 import { detectOpenGym, OPENGYM_STORAGE_KEY, syncOpenGymData, syncRemoteOpenGym } from './lib/opengym'
 import { today, useSettings, useStore } from './store'
 import { useSync } from './sync'
@@ -105,36 +106,14 @@ export default function App() {
     }
   }, [])
 
-  // Calculate logging streak
-  const streak = useMemo(() => {
-    let count = 0
-    let checkDate = new Date()
-    while (true) {
-      const iso = checkDate.toLocaleDateString('en-CA')
-      if (diary[iso] && diary[iso].length > 0) {
-        count++
-        checkDate.setDate(checkDate.getDate() - 1)
-      } else {
-        if (count === 0 && iso === today()) {
-          checkDate.setDate(checkDate.getDate() - 1)
-          const yestIso = checkDate.toLocaleDateString('en-CA')
-          if (diary[yestIso] && diary[yestIso].length > 0) {
-            count++
-            checkDate.setDate(checkDate.getDate() - 1)
-            continue
-          }
-        }
-        break
-      }
-    }
-    return count
-  }, [diary])
+  const streak = useMemo(() => logStreak(diary), [diary])
 
   const needsLogin = server && !user && !(guest && server.guests)
 
   const goSettings = (p = 'profile') => {
     setPage(p)
     setTab('Settings')
+    window.scrollTo(0, 0)
   }
 
   const exitOnboarding = () => {
@@ -156,7 +135,7 @@ export default function App() {
     <>
       <main>
         {/* App Top Bar */}
-        {!needsLogin && tab !== 'Settings' && (
+        {!needsLogin && tab === 'Diary' && (
           <header className="hdr" style={{ marginBottom: 12 }}>
             <div>
               <h1 style={{ fontSize: 'var(--fs-large)', letterSpacing: '-0.025em' }}>openKCal</h1>
@@ -248,6 +227,7 @@ export default function App() {
           setTab={(t) => {
             setTab(t)
             if (t !== 'Settings') setPage(null)
+            window.scrollTo(0, 0)
           }}
           onQuickLog={() => setQuickAddOpen(true)}
         />

@@ -2,9 +2,14 @@ import { useState, useMemo } from 'react'
 import Icon from '../components/Icon'
 import LineChart from '../components/LineChart'
 import { detectOpenGym, syncOpenGymData, syncRemoteOpenGym } from '../lib/opengym'
+import { logStreak } from '../lib/nutrition'
 import { fmtWeight, weightFromKg, weightToKg } from '../lib/units'
 import { today, useSettings, useStore } from '../store'
 import { useUI } from '../store/useUI'
+
+// 'Mon 16 Nov', like openGym
+const fmtDay = (iso) =>
+  new Date(iso + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 
 export default function Trends() {
   const [range, setRange] = useState('1M')
@@ -42,30 +47,7 @@ export default function Trends() {
   const startKg = allWeightEntries.length ? weights[allWeightEntries[0].d] : profile?.weightKg
   const deltaKg = currentKg && startKg ? Math.round((currentKg - startKg) * 10) / 10 : 0
 
-  // Calculate streak (consecutive days with diary entries)
-  const streak = useMemo(() => {
-    let count = 0
-    let checkDate = new Date()
-    while (true) {
-      const iso = checkDate.toLocaleDateString('en-CA')
-      if (diary[iso] && diary[iso].length > 0) {
-        count++
-        checkDate.setDate(checkDate.getDate() - 1)
-      } else {
-        if (count === 0 && iso === today()) {
-          checkDate.setDate(checkDate.getDate() - 1)
-          const yestIso = checkDate.toLocaleDateString('en-CA')
-          if (diary[yestIso] && diary[yestIso].length > 0) {
-            count++
-            checkDate.setDate(checkDate.getDate() - 1)
-            continue
-          }
-        }
-        break
-      }
-    }
-    return count
-  }, [diary])
+  const streak = useMemo(() => logStreak(diary), [diary])
 
   // BMR & TDEE Calculations
   const age = profile?.age || 28
@@ -242,14 +224,14 @@ export default function Trends() {
           </span>
           <div>
             <span style={{ fontSize: varFs('fs-body'), fontWeight: 700, display: 'block' }}>
-              {streak} Day Logging Streak
+              {streak > 0 ? `${streak} day logging streak` : 'No logging streak yet'}
             </span>
             <span className="muted">Consistency is the key to lasting body transformation</span>
           </div>
         </div>
         <div style={{ textAlign: 'end' }}>
           <span className="font-acc" style={{ fontWeight: 700, fontSize: 'var(--fs-title3)' }}>
-            {streak > 0 ? '🔥 On Fire' : 'Ready'}
+            {streak > 0 ? 'On fire' : 'Log a meal'}
           </span>
         </div>
       </div>
@@ -331,7 +313,7 @@ export default function Trends() {
               {allWeightEntries.slice(-10).reverse().map((p) => (
                 <div key={p.d} className="lrow">
                   <span className="lrow-m">
-                    <span className="lrow-t">{p.d}</span>
+                    <span className="lrow-t">{fmtDay(p.d)}</span>
                   </span>
                   <span className="lrow-v">{p.y} {weightUnit}</span>
                   <button
@@ -340,7 +322,7 @@ export default function Trends() {
                     style={{ width: 28, height: 28, fontSize: 13 }}
                     onClick={() => {
                       removeWeight(p.d)
-                      toast(`Deleted weigh-in for ${p.d}`)
+                      toast(`Deleted weigh-in for ${fmtDay(p.d)}`)
                     }}
                     aria-label={`Delete ${p.d}`}
                   >

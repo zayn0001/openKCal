@@ -1046,6 +1046,14 @@ select:not(.activity-select):focus {
   }
 }
 
+@media (min-width: 680px) {
+  .chat-input-bar {
+    bottom: 110px;
+    border-radius: var(--r-xl);
+    width: 540px;
+  }
+}
+
 /* ---------------- Bottom Sheets & Dialogs ---------------- */
 .sheet-backdrop {
   position: fixed;
@@ -1098,7 +1106,7 @@ select:not(.activity-select):focus {
 
 .center {
   position: relative;
-  width: min(88vw, 340px);
+  width: min(92vw, 420px);
   background: var(--surface-raised);
   border-radius: var(--r-lg);
   padding: 20px;
@@ -1711,7 +1719,8 @@ select:not(.activity-select):focus {
 }
 .chat-input-bar {
   position: fixed;
-  bottom: calc(64px + var(--sab));
+  z-index: 49;
+  bottom: calc(86px + var(--sab)); /* clears the tab bar and its raised centre button */
   left: 50%;
   transform: translateX(-50%);
   width: min(640px, 100vw);

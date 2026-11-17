@@ -132,3 +132,13 @@ test('units, settings defaults, CSV', () => {
   const csv = diaryCsv({ '2026-01-02': [{ meal: 'Lunch', name: 'Dal', grams: 150, kcal: 150.04 }] })
   assert.equal(csv.split(/\r\n/)[1], '2026-01-02,Lunch,Dal,150,150,,,,,,,')
 })
+
+test('logStreak counts back from today, tolerating an unlogged today', async () => {
+  const { logStreak } = await import('./nutrition.js')
+  const now = new Date(2026, 10, 17)
+  const e = [{ kcal: 1 }]
+  assert.equal(logStreak({}, now), 0)
+  assert.equal(logStreak({ '2026-11-17': e, '2026-11-16': e }, now), 2)
+  assert.equal(logStreak({ '2026-11-16': e, '2026-11-15': e, '2026-11-13': e }, now), 2)
+  assert.equal(logStreak({ '2026-11-15': e }, now), 0)
+})

@@ -71,3 +71,13 @@ export const recipePer100 = (ingredients) => {
   if (!grams) return Object.fromEntries(NUTRIENTS.map((k) => [k, 0]))
   return scale(sum(ingredients.map((i) => scale(i.per100, i.grams))), 10000 / grams)
 }
+
+// Consecutive days with diary entries, ending today (or yesterday, if today isn't logged yet).
+export function logStreak(diary, now = new Date()) {
+  const d = new Date(now)
+  const iso = () => d.toLocaleDateString('en-CA')
+  if (!diary[iso()]?.length) d.setDate(d.getDate() - 1)
+  let n = 0
+  while (diary[iso()]?.length) { n++; d.setDate(d.getDate() - 1) }
+  return n
+}

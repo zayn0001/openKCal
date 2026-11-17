@@ -288,8 +288,8 @@ export default function Foods() {
               {filter === 'Community'
                 ? 'No community items shared yet. Foods and dishes you create are automatically shared here.'
                 : filter === 'All Recipes'
-                ? 'No recipes created yet. Tap "Make Recipe Dish" to share the first one with all users!'
-                : 'No items in this category. Tap “Add Custom Food” or “Make Recipe Dish” to create one.'}
+                ? 'No recipes created yet. Tap "Make Recipe" to share the first one with all users!'
+                : 'No items in this category. Tap “Add Food” or “Make Recipe” to create one.'}
             </div>
           )}
         </div>

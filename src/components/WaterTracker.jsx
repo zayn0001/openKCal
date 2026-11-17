@@ -60,14 +60,24 @@ export default function WaterTracker({ date, glasses = 0, onAddWater, goalGlasse
       <div className="water-quick-buttons">
         <button
           type="button"
-          className="btn sm tinted"
+          className="btn sm"
+          style={{
+            background: 'color-mix(in srgb, var(--blue) 14%, transparent)',
+            color: 'var(--blue)',
+            border: '1px solid color-mix(in srgb, var(--blue) 28%, transparent)',
+          }}
           onClick={() => onAddWater(date, 1)}
         >
           <Icon name="drop" /> +250 ml (1 glass)
         </button>
         <button
           type="button"
-          className="btn sm tinted"
+          className="btn sm"
+          style={{
+            background: 'color-mix(in srgb, var(--blue) 14%, transparent)',
+            color: 'var(--blue)',
+            border: '1px solid color-mix(in srgb, var(--blue) 28%, transparent)',
+          }}
           onClick={() => onAddWater(date, 2)}
         >
           <Icon name="glassWater" /> +500 ml (Bottle)

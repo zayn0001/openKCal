@@ -178,7 +178,7 @@ export function AiPage() {
         </label>
 
         <div className="actions">
-          <button type="button" disabled={busy} onClick={save}>
+          <button type="button" className="btn primary" disabled={busy} onClick={save}>
             Save
           </button>
         </div>

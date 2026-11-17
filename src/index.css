@@ -294,25 +294,37 @@ button {
 }
 
 .iconbtn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   flex: none;
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--label);
+  border: 1px solid var(--sep-op);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
-  transition: transform var(--fast) var(--ease), background var(--fast);
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform var(--fast) var(--ease), background var(--fast), border-color var(--fast), opacity var(--fast);
+}
+.iconbtn:hover {
+  background: var(--surface-3);
+  border-color: var(--sep);
 }
 .iconbtn:active {
   transform: scale(var(--press-scale-sm));
-  background: var(--surface-2);
+  background: var(--surface-3);
+}
+.iconbtn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 .iconbtn.on-ss {
   background: var(--acc-soft);
   color: var(--acc-ink);
+  border-color: var(--acc-line);
 }
 
 /* ---------------- Cards ---------------- */
@@ -322,9 +334,28 @@ button {
   padding: 16px;
   margin-bottom: 14px;
   position: relative;
+  color: var(--label);
+  box-shadow: 0 4px 20px -6px rgba(0, 0, 0, 0.25);
+  border: var(--hair) solid var(--raised-line);
+}
+:root[data-theme="light"] .card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: var(--hair) solid rgba(60, 60, 67, 0.12);
+}
+button.card, .button.card {
+  width: 100%;
+  text-align: start;
+  color: var(--label);
+  background: var(--surface);
+  border: var(--hair) solid var(--raised-line);
+  display: block;
 }
 .card.tappable {
-  transition: transform var(--fast) var(--ease);
+  cursor: pointer;
+  transition: transform var(--fast) var(--ease), background var(--fast), box-shadow var(--fast);
+}
+.card.tappable:hover {
+  background: var(--surface-2);
 }
 .card.tappable:active {
   transform: scale(var(--press-scale-card));
@@ -559,8 +590,9 @@ button {
   font-size: var(--fs-body);
 }
 
-/* Default button styling for plain buttons (e.g. inside cards/forms) */
-button:not(.btn):not(.iconbtn):not(.tap):not(.ghost):not(.clear):not(.link):not([role="tab"]):not([role="radio"]):not([role="switch"]):not([role="checkbox"]):not(.row):not(.food-info-btn):not(.chip):not(.wday):not(.swatch):not(.seg > button):not(.stp button):not(#tabbar button) {
+/* Fallback styling for unclassed submit buttons in forms / action bars */
+form > button:not([class]):not([role]),
+.actions > button:not([class]):not([role]) {
   min-height: 40px;
   padding: 9px 18px;
   border-radius: var(--r-sm);
@@ -575,10 +607,12 @@ button:not(.btn):not(.iconbtn):not(.tap):not(.ghost):not(.clear):not(.link):not(
   cursor: pointer;
   transition: transform var(--fast) var(--ease), opacity var(--fast);
 }
-button:not(.btn):not(.iconbtn):not(.tap):not(.ghost):not(.clear):not(.link):not([role="tab"]):not([role="radio"]):not([role="switch"]):not([role="checkbox"]):not(.row):not(.food-info-btn):not(.chip):not(.wday):not(.swatch):not(.seg > button):not(.stp button):not(#tabbar button):active {
+form > button:not([class]):not([role]):active,
+.actions > button:not([class]):not([role]):active {
   transform: scale(var(--press-scale));
 }
-button:not(.btn):not(.iconbtn):not(.tap):not(.ghost):not(.clear):not(.link):not([role="tab"]):not([role="radio"]):not([role="switch"]):not([role="checkbox"]):not(.row):not(.food-info-btn):not(.chip):not(.wday):not(.swatch):not(.seg > button):not(.stp button):not(#tabbar button):disabled {
+form > button:not([class]):not([role]):disabled,
+.actions > button:not([class]):not([role]):disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -805,9 +839,12 @@ select:not(.activity-select):focus {
   padding: 3px;
   gap: 4px;
 }
-.stp button {
+.stp button,
+.stp .stp-btn {
   width: 32px;
   height: 32px;
+  min-height: 32px;
+  padding: 0;
   border-radius: 7px;
   display: flex;
   align-items: center;
@@ -815,9 +852,16 @@ select:not(.activity-select):focus {
   background: var(--surface-3);
   color: var(--label);
   font-size: 15px;
-  transition: transform var(--fast);
+  border: none;
+  cursor: pointer;
+  transition: transform var(--fast), background var(--fast);
 }
-.stp button:active {
+.stp button:hover,
+.stp .stp-btn:hover {
+  background: var(--sep);
+}
+.stp button:active,
+.stp .stp-btn:active {
   transform: scale(var(--press-scale-sm));
 }
 .stp .val {
@@ -1419,30 +1463,42 @@ select:not(.activity-select):focus {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 12px 0 14px;
+  margin: 12px 0 16px;
 }
 .water-glass-dot {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
   background: var(--surface-2);
   color: var(--label-3);
+  border: 1px solid var(--sep-op);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  transition: background var(--fast), color var(--fast), transform var(--fast);
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--fast) var(--ease), background var(--fast), color var(--fast), border-color var(--fast), box-shadow var(--fast);
+}
+.water-glass-dot:hover {
+  background: var(--surface-3);
+  color: var(--label-2);
 }
 .water-glass-dot.filled {
-  background: color-mix(in srgb, var(--blue) 22%, transparent);
-  color: var(--blue);
+  background: var(--blue) !important;
+  color: #ffffff !important;
+  border-color: var(--blue) !important;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--blue) 45%, transparent);
 }
 .water-glass-dot:active {
   transform: scale(var(--press-scale-sm));
 }
 .water-quick-buttons {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+}
+.water-quick-buttons .btn {
+  flex: 1;
 }
 
 /* ---------------- Fasting Tracker ---------------- */

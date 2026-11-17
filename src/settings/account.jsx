@@ -268,7 +268,7 @@ export function AccountPage() {
             </label>
             {msg && <p role="alert">{msg}</p>}
             <div className="actions">
-              <button>Save password</button>
+              <button className="btn primary">Save password</button>
             </div>
           </form>
         </Dialog>

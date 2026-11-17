@@ -63,7 +63,7 @@ export default function Login({ full = false, onOpenWelcome }) {
                   Use a passkey
                 </button>
               )}
-              <button disabled={busy}>Sign in</button>
+              <button disabled={busy} className="btn primary">Sign in</button>
             </div>
           </form>
           <p className="muted">
@@ -105,7 +105,7 @@ export default function Login({ full = false, onOpenWelcome }) {
           <SignupSecret passkeys={passkeys} />
           {problem && <p role="alert">{problem}</p>}
           <div className="actions">
-            <button disabled={busy}>{server?.signup === 'first' ? 'Create the owner account' : 'Create account'}</button>
+            <button disabled={busy} className="btn primary">{server?.signup === 'first' ? 'Create the owner account' : 'Create account'}</button>
           </div>
         </form>
       )}
@@ -130,7 +130,7 @@ export default function Login({ full = false, onOpenWelcome }) {
             <button type="button" className="ghost" onClick={() => setMode('signin')}>
               Back
             </button>
-            <button disabled={busy}>Set password and sign in</button>
+            <button disabled={busy} className="btn primary">Set password and sign in</button>
           </div>
         </form>
       )}
@@ -147,7 +147,7 @@ export default function Login({ full = false, onOpenWelcome }) {
             <button type="button" className="ghost" onClick={() => setMode('signin')}>
               Back
             </button>
-            <button disabled={busy}>Sign in</button>
+            <button disabled={busy} className="btn primary">Sign in</button>
           </div>
         </form>
       )}

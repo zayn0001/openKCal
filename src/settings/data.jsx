@@ -41,7 +41,7 @@ export function DataPage() {
           {counts.foods} foods and dishes of your own.
         </p>
         <div className="actions start">
-          <button type="button" onClick={() => download(`openkcal-${today()}.json`, JSON.stringify(pick(useStore.getState())), 'application/json')}>
+          <button type="button" className="btn sm primary" onClick={() => download(`openkcal-${today()}.json`, JSON.stringify(pick(useStore.getState())), 'application/json')}>
             Export backup (JSON)
           </button>
           <button type="button" className="ghost" onClick={() => download(`openkcal-diary-${today()}.csv`, diaryCsv(useStore.getState().diary), 'text/csv')}>

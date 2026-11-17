@@ -98,7 +98,7 @@ export function IntegrationsPage() {
           <p className="muted">Shown this once. Paste it into your tool if it checks signatures; openKCal can’t show it again.</p>
           <p className="code">{secret}</p>
           <div className="actions">
-            <button type="button" onClick={() => setSecret(null)}>
+            <button type="button" className="btn sm tinted" onClick={() => setSecret(null)}>
               Done
             </button>
           </div>
@@ -139,7 +139,7 @@ export function IntegrationsPage() {
               ))}
             </fieldset>
             <div className="actions">
-              <button>Add webhook</button>
+              <button className="btn primary">Add webhook</button>
             </div>
           </form>
         )

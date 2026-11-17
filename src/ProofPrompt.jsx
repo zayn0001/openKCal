@@ -34,7 +34,7 @@ export default function ProofPrompt() {
             <input name="password" type="password" required autoComplete="current-password" />
           </label>
           <div className="actions">
-            <button>Confirm</button>
+            <button className="btn primary">Confirm</button>
           </div>
         </form>
       )}
@@ -42,7 +42,7 @@ export default function ProofPrompt() {
         <div className="actions">
           <button
             type="button"
-            className={user?.hasPassword ? 'ghost' : undefined}
+            className={user?.hasPassword ? 'ghost' : 'btn primary'}
             onClick={async () => {
               try {
                 const proof = await passkeyProof()

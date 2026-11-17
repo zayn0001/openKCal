@@ -77,18 +77,33 @@ export default function Settings({ page, setPage }) {
       {user && (
         <button
           type="button"
-          className="card tappable"
-          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, marginBottom: 16 }}
+          className="card tappable user-profile-card"
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: 16, marginBottom: 18 }}
           onClick={() => setPage('account')}
         >
-          <span className="lrow-i" style={{ '--tint': 'var(--acc)' }}>
+          <span
+            className="lrow-i"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              fontSize: 22,
+              background: 'var(--acc-soft)',
+              color: 'var(--acc-ink)',
+              flex: 'none',
+            }}
+          >
             <Icon name="person" />
           </span>
-          <div style={{ flex: 1, textAlign: 'start' }}>
-            <span style={{ fontSize: 'var(--fs-body)', fontWeight: 600, display: 'block' }}>{user.name}</span>
-            <span className="muted">{user.owner ? 'Server Owner' : user.admin ? 'Administrator' : 'Signed In'} · Manage Account</span>
+          <div style={{ flex: 1, minWidth: 0, textAlign: 'start' }}>
+            <span style={{ fontSize: 'var(--fs-title3)', fontWeight: 700, display: 'block', color: 'var(--label)', letterSpacing: '-0.015em' }}>
+              {user.name}
+            </span>
+            <span className="muted" style={{ display: 'block', marginTop: 2 }}>
+              {user.owner ? 'Server Owner' : user.admin ? 'Administrator' : 'Signed In'} · Manage Account
+            </span>
           </div>
-          <Icon name="chevronRight" className="lrow-c" />
+          <Icon name="chevronRight" className="lrow-c" style={{ fontSize: 18 }} />
         </button>
       )}
 

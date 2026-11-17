@@ -33,7 +33,7 @@ function Users({ me }) {
           <p className="code">{code.code}</p>
           <p className="muted">Shown once. Hand it over in person or by message: it works once, for 24 hours, at Sign in → Have a reset code? Their old password no longer works; their passkeys still do.</p>
           <div className="actions">
-            <button type="button" onClick={() => setCode(null)}>
+            <button type="button" className="btn sm tinted" onClick={() => setCode(null)}>
               Done
             </button>
           </div>
@@ -142,7 +142,7 @@ function Invites() {
             <p className="code">{fresh.code}</p>
             <p className="muted">Shown once. It works for one account, until it expires.</p>
             <div className="actions">
-              <button type="button" onClick={() => setFresh(null)}>
+              <button type="button" className="btn sm tinted" onClick={() => setFresh(null)}>
                 Done
               </button>
             </div>
@@ -176,7 +176,7 @@ function Invites() {
               </label>
             </div>
             <div className="actions">
-              <button>Make an invite code</button>
+              <button className="btn primary">Make an invite code</button>
             </div>
           </form>
         )}

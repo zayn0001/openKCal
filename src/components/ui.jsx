@@ -99,7 +99,7 @@ export function Stepper({ value, step = 1, min = 0, max = Infinity, onChange, un
     <div className={'stp-w ' + className}>
       {label && <span className="stp-l">{label}</span>}
       <div className="stp">
-        <button type="button" onClick={() => bump(-1)} disabled={disabled || value <= min} aria-label="Decrease">
+        <button type="button" className="stp-btn" onClick={() => bump(-1)} disabled={disabled || value <= min} aria-label="Decrease">
           <Icon name="minus" />
         </button>
         <span className="val">
@@ -112,7 +112,7 @@ export function Stepper({ value, step = 1, min = 0, max = Infinity, onChange, un
           />
           {unit && <i>{unit}</i>}
         </span>
-        <button type="button" onClick={() => bump(1)} disabled={disabled || value >= max} aria-label="Increase">
+        <button type="button" className="stp-btn" onClick={() => bump(1)} disabled={disabled || value >= max} aria-label="Increase">
           <Icon name="plus" />
         </button>
       </div>

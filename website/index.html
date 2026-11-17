@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Thally: a food tracker for the way you eat</title>
-    <meta name="description" content="Log Indian home meals by saying what you ate. Nutrition for 5,956 foods, your own dishes, no ads, and your data stays with you." />
+    <title>openKCal: a food & calorie tracker for the way you eat</title>
+    <meta name="description" content="Log meals by photo, label OCR or natural language. Integrated with openGym, nutrition for 5,956+ foods & community recipes, no ads, and your data stays with you." />
     <meta name="theme-color" content="#1f2547" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -53,6 +53,7 @@
       .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.3rem; border-radius: 999px; font: 600 1.05rem var(--body); text-decoration: none; border: 2px solid var(--ink); }
       .btn.main { background: var(--ink); color: var(--rice); }
       .btn.quiet { background: transparent; color: var(--ink); }
+      .btn.gh { background: #24292f; color: #ffffff; border-color: #24292f; }
       .btn:hover { transform: translateY(-1px); }
       .btn small { font-weight: 400; opacity: 0.8; }
 
@@ -128,15 +129,15 @@
   <body>
     <header class="top">
       <div class="wrap">
-        <a class="brand" href="#top" aria-label="Thally, home">
+        <a class="brand" href="#top" aria-label="openKCal, home">
           <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#c7ced1" /><circle cx="32" cy="32" r="25" fill="#e4e9eb" /><circle cx="22" cy="24" r="8" fill="#e3a21a" /><circle cx="42" cy="24" r="8" fill="#2f6b3a" /><circle cx="32" cy="42" r="9" fill="#f7f4ea" /></svg>
-          Thally
+          openKCal
         </a>
         <nav aria-label="Page">
           <a href="#say">How it works</a>
           <a href="#features">What it does</a>
           <a href="#get">Get it</a>
-          <a class="btn main" href="#get">Download</a>
+          <a class="btn main" href="#get">Download APK</a>
         </nav>
       </div>
     </header>
@@ -144,16 +145,19 @@
     <main id="top">
       <div class="wrap hero">
         <div>
-          <h1>Every thali, tallied.</h1>
+          <h1>Every calorie, accounted for.</h1>
           <p class="lede">
-            Tell Thally what you ate, the way you would tell a friend. It knows roti, dal and rajma chawal, counts what is in them, and keeps your numbers on your
-            phone or your own server.
+            openKCal is the open-source nutrition & calorie tracking counterpart to openGym. Snap a meal photo to make a dish, scan nutrition facts labels with AI, or speak naturally. Syncs live with your openGym workouts and weight data.
           </p>
           <div class="ctas">
-            <a class="btn main" href="/download/thally.apk" download>Download for Android <small data-apk-size></small></a>
-            <a class="btn quiet" href="/">Open the web app</a>
+            <a class="btn main" href="/download/openkcal.apk" download>Download APK <small data-apk-size></small></a>
+            <a class="btn gh" href="https://github.com/openkcal/openkcal/releases/latest/download/openkcal.apk" target="_blank" rel="noopener">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+              GitHub Release
+            </a>
+            <a class="btn quiet" href="/">Open Web App</a>
           </div>
-          <p class="fine">Free. No ads, no subscription, no tracking.</p>
+          <p class="fine">100% Free & Open-Source. No ads, no paywalls, zero tracking.</p>
         </div>
 
         <svg class="plate" viewBox="0 0 520 520" role="img" aria-label="A thali with two rotis, dal, bhindi, rajma, curd and rice, adding up to 1,184 kcal and 46 g of protein">
@@ -194,12 +198,12 @@
           <div>
             <div class="head">
               <h2>Say what you ate. Check it. Done.</h2>
-              <p>No scrolling through menus of “Dal, yellow, cooked, with oil”. Speak or type a sentence and Thally drafts the entries for you.</p>
+              <p>No scrolling through menus of “Dal, yellow, cooked, with oil”. Speak or type a sentence, take a photo of your food, or scan a package label, and openKCal drafts the entries for you.</p>
             </div>
             <ol>
-              <li>Tap the microphone and say it: “two rotis, a katori of dal and a chai”.</li>
-              <li>Thally finds each food among yours and the 5,956 it knows, and estimates the grams. A home-made dish it hasn’t seen before gets drafted from its ingredients.</li>
-              <li>You see every item before anything is saved. Fix the grams, move it to another meal, untick what is wrong, then log it.</li>
+              <li>Tap the microphone and say it, snap a food picture, or scan a label.</li>
+              <li>openKCal finds each food or creates a new shared recipe dish with ingredients.</li>
+              <li>You review the items before anything is saved: adjust portions, 1-tap accept and log.</li>
             </ol>
           </div>
           <div class="phone" aria-label="Example of a meal being logged from a sentence">
@@ -225,33 +229,32 @@
           </div>
           <div class="groups">
             <div>
-              <h3>Logging</h3>
+              <h3>AI & Logging Skills</h3>
               <ul>
-                <li><b>By voice or text</b><span>A sentence becomes diary entries you confirm.</span></li>
-                <li><b>Indian food first</b><span>525 foods from India’s official composition tables, plus 5,431 cooked dishes with cup, piece and slice portions.</span></li>
-                <li><b>Your own dishes</b><span>Join ingredients into your rajma chawal, say how many it serves, weigh the pot if you like. It shows up first in every search.</span></li>
-                <li><b>Barcodes</b><span>Scan a packet, or type its number, and it is looked up on Open Food Facts.</span></li>
-                <li><b>A photo of your plate</b><span>Get a first draft from a picture, then correct it.</span></li>
+                <li><b>Photo to Recipe Dish</b><span>Click a photo of your meal and openKCal identifies dishes & ingredients, ready to log or save as a community recipe dish in 1 tap.</span></li>
+                <li><b>Nutrition Label OCR</b><span>Snap a photo of the nutrition facts label (+ optional product front) on branded foods to parse macros automatically into the database.</span></li>
+                <li><b>Voice & Natural Language</b><span>A sentence becomes diary entries and dishes you confirm.</span></li>
+                <li><b>Shared Community Foods</b><span>Every custom food and recipe dish created by any user is immediately available across the community library.</span></li>
+                <li><b>Indian Food Database</b><span>Official composition tables (IFCT 2017) + 5,431 cooked dishes with household portions.</span></li>
               </ul>
             </div>
             <div>
-              <h3>Your numbers</h3>
+              <h3>openGym Live Sync</h3>
               <ul>
-                <li><b>Full nutrition for every food</b><span>Energy, protein, carbs and sugars, fat and saturated fat, fibre and sodium, for what you ate and per 100 g.</span></li>
-                <li><b>Daily targets</b><span>Worked out from your height, weight, activity and goal.</span></li>
-                <li><b>Weight and water</b><span>A trend line towards your goal weight, and glasses of water.</span></li>
-                <li><b>A weekly review</b><span>A short read of your week against your targets, if you want one.</span></li>
-                <li><b>Meal reminders</b><span>A nudge at lunch, skipped when lunch is already logged.</span></li>
+                <li><b>Pairing Code Redemption</b><span>Redeem a 6-character openGym pairing code in 1 tap to link your training and nutrition seamlessly.</span></li>
+                <li><b>Workout Calorie Burns</b><span>Automatically imports openGym workout sets and calculates active MET-based calorie expenditures.</span></li>
+                <li><b>Weigh-In Synchronization</b><span>Syncs scale weights and body measurements directly to progress graphs and dynamic TDEE calculations.</span></li>
+                <li><b>Lightweight Revision Polling</b><span>Zero-bandwidth background polling ensures data stays up to date without draining battery.</span></li>
               </ul>
             </div>
             <div>
-              <h3>Your data, your people</h3>
+              <h3>Privacy & Self-Hosting</h3>
               <ul>
-                <li><b>Works on its own</b><span>The Android app keeps everything on your phone. No account needed.</span></li>
-                <li><b>Or on your own server</b><span>Sync your phone and laptop, and invite family with a code.</span></li>
-                <li><b>Your AI, your key</b><span>Voice and photo logging use the AI you connect: Claude, OpenAI, Gemini, or a model on your own computer.</span></li>
-                <li><b>Passkeys</b><span>Sign in with your fingerprint or face, or a password.</span></li>
-                <li><b>Take it with you</b><span>Export everything as a backup file or a spreadsheet, any time.</span></li>
+                <li><b>Works Offline on Phone</b><span>The Android app keeps everything on your phone with no account required.</span></li>
+                <li><b>Or on Your Own Server</b><span>Sync your phone, tablet, and laptop with end-to-end device management.</span></li>
+                <li><b>Your AI, Your Key</b><span>Connect Claude, OpenAI, Gemini, or local Ollama/LM Studio with personal keys sealed on your server.</span></li>
+                <li><b>Passkeys & Fingerprints</b><span>Sign in with your biometric passkey, device code, or password.</span></li>
+                <li><b>Full Data Ownership</b><span>Export and import your complete diary, foods, and weights anytime in CSV or JSON.</span></li>
               </ul>
             </div>
           </div>
@@ -261,36 +264,41 @@
       <section class="band" id="get">
         <div class="wrap">
           <div class="head">
-            <h2>Get Thally</h2>
-            <p>The same app two ways. The difference is where your diary lives.</p>
+            <h2>Get openKCal</h2>
+            <p>Available as a standalone Android APK and as a self-hosted progressive web app.</p>
           </div>
           <div class="ways">
             <div class="way android">
-              <h3>On your Android phone</h3>
-              <p class="soft">For anyone. Your diary stays on your phone.</p>
+              <h3>Download Android APK</h3>
+              <p class="soft">Standalone mobile app with full offline support.</p>
               <ol>
-                <li>Download the app.</li>
-                <li>Open the file. Android asks once whether your browser may install apps; allow it.</li>
-                <li>Open Thally, set up your profile, and log your first meal.</li>
+                <li>Download the latest release APK directly or from GitHub.</li>
+                <li>Open the downloaded APK on your Android device. If prompted, enable "Install unknown apps" for your browser.</li>
+                <li>Open openKCal, configure your macro targets, or connect your openGym server!</li>
               </ol>
-              <div><a class="btn main" href="/download/thally.apk" download>Download for Android <small data-apk-size></small></a></div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a class="btn main" href="/download/openkcal.apk" download>Direct APK Download <small data-apk-size></small></a>
+                <a class="btn gh" href="https://github.com/openkcal/openkcal/releases/latest/download/openkcal.apk" target="_blank" rel="noopener">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                  GitHub Releases
+                </a>
+              </div>
               <p class="meta">
-                Version <span data-apk-version>0.3.0</span> · Android 7 or newer · signed. Voice logging, reminders and sync need a server, so on the phone on its own you log by
-                search, barcode and your dishes.
+                Version <span data-apk-version>0.3.0</span> · Android 7.0+ · Signed Release. Checksums verified below.
               </p>
               <p class="meta sha" data-apk-sha-row hidden>SHA-256: <code data-apk-sha></code></p>
             </div>
             <div class="way">
-              <h3>With your own server</h3>
-              <p class="soft">For a household, or anyone who wants every device in step.</p>
+              <h3>Deploy Your Server</h3>
+              <p class="soft">Sync your mobile app, laptop, and family members under one roof.</p>
               <ul>
-                <li>Use it on Android, iPhone and your laptop, always in sync</li>
-                <li>Log by voice or photo with your own AI key</li>
-                <li>Meal reminders, invites for family, an admin dashboard</li>
+                <li>Run with Docker Compose or Docker container</li>
+                <li>Connect personal AI keys for photo dish & label OCR parsing</li>
+                <li>Live auto-sync integration with openGym servers</li>
               </ul>
               <pre><code>docker compose up -d</code></pre>
-              <p class="meta">Or on Render’s free plan, with your data kept in a storage bucket. The setup guide is in the project’s README.</p>
-              <p class="meta"><b>On iPhone?</b> Open your server’s address in Safari, then Share → Add to Home Screen.</p>
+              <p class="meta">Open source code, setup instructions and GitHub Actions release workflows are available in the repository.</p>
+              <p class="meta"><b>On iPhone / Safari?</b> Open your server URL in Safari, then tap Share → Add to Home Screen.</p>
             </div>
           </div>
         </div>
@@ -300,17 +308,17 @@
     <footer>
       <div class="wrap">
         <p>
-          Food data: Indian Food Composition Tables 2017 (National Institute of Nutrition, ICMR), the USDA Food and Nutrient Database for Dietary Studies, and Open
-          Food Facts.
+          Food data: Indian Food Composition Tables 2017 (National Institute of Nutrition, ICMR), USDA Food and Nutrient Database for Dietary Studies, and Open Food Facts.
         </p>
-        <p>Accounts, sync and self-hosting follow openGym by Duarte Santos. Targets and AI answers are estimates, not medical advice.</p>
+        <p>openKCal is designed to complement openGym by Duarte Santos. Macro calculations and AI suggestions are estimates for general wellness.</p>
       </div>
     </footer>
 
     <script>
-      // Fill in the size, version and checksum of the APK this server offers.
-      fetch('/download/thally.json')
-        .then((r) => (r.ok ? r.json() : null))
+      // Fill in size, version and checksum of the APK offered
+      const tryFetch = (url) => fetch(url).then((r) => (r.ok ? r.json() : null))
+      tryFetch('/download/openkcal.json')
+        .then((a) => a || tryFetch('/download/thally.json'))
         .then((a) => {
           if (!a) return
           const mb = `${(a.size / 1048576).toFixed(1)} MB`

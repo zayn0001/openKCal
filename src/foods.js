@@ -9,12 +9,24 @@ const data = import('./foods-data.json')
 
 export const loadFoods = () => data.then((m) => m.default.map(rowToFood))
 
-/** Your foods and dishes plus the catalogue (loaded once, in the background). */
+/** Your foods and dishes plus community recipes and the catalogue (loaded once, in the background). */
 export function useAllFoods() {
   const custom = useStore((s) => s.foods)
+  const sharedRecipes = useStore((s) => s.sharedRecipes) || []
   const [catalogue, setCatalogue] = useState([])
+
   useEffect(() => {
     loadFoods().then(setCatalogue)
   }, [])
-  return { custom, all: [...custom, ...catalogue], loaded: catalogue.length > 0 }
+
+  // Deduplicate between user's own custom foods and shared community recipes
+  const customIds = new Set(custom.map((f) => f.id))
+  const otherShared = sharedRecipes.filter((r) => !customIds.has(r.id))
+
+  return {
+    custom,
+    sharedRecipes,
+    all: [...custom, ...otherShared, ...catalogue],
+    loaded: catalogue.length > 0,
+  }
 }

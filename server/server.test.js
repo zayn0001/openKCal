@@ -5,7 +5,7 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { cleanItems, parseJsonAnswer, withVersion } from './ai.js'
+import { cleanItems, cleanLabelItem, parseJsonAnswer, withVersion } from './ai.js'
 import { eventsFrom } from './hooks.js'
 import { checkSubscription, dueReminders, localNow } from './push.js'
 import { createApp } from './server.js'
@@ -192,7 +192,7 @@ test('admin dashboard: disable, reset code, roles, ownership, delete, activity l
 test('static files: served from dist, no path traversal', async (t) => {
   // Any real folders will do: server/ stands in for dist and for releases.
   const { base } = await start(t, { distDir: path.resolve('server'), siteDir: path.resolve('website'), releasesDir: path.resolve('server') })
-  assert.match(await (await fetch(base + '/welcome')).text(), /Every thali, tallied/)
+  assert.match(await (await fetch(base + '/welcome')).text(), /Every (calorie|thali)/)
   assert.match(await (await fetch(base + '/download/push.js')).text(), /dueReminders/)
   assert.equal((await fetch(base + '/download/..%2fpackage.json')).status, 404) // stays in releases/
   assert.match(await (await fetch(base + '/ai.js')).text(), /createAi/)
@@ -323,4 +323,107 @@ test('pure pieces: events from a sync, reminders, provider helpers', () => {
   assert.equal(withVersion('https://openrouter.ai/api/v1', '/v1', '/models'), 'https://openrouter.ai/api/v1/models')
   assert.equal(withVersion('http://ollama.lan:11434', '/v1', '/models'), 'http://ollama.lan:11434/v1/models')
   assert.equal(cleanItems([{ name: 'x'.repeat(200), grams: -5 }])[0].grams, 1)
+
+  const parsedLabel = cleanLabelItem({
+    name: 'Epigamia Greek Yogurt',
+    portionName: '1 cup',
+    portionGrams: 120,
+    kcal_per_100g: 130,
+    protein_per_100g: 10,
+    carbs_per_100g: 12,
+    fat_per_100g: 4,
+  })
+  assert.equal(parsedLabel.name, 'Epigamia Greek Yogurt')
+  assert.equal(parsedLabel.portions[0].grams, 120)
+  assert.equal(parsedLabel.per100.protein, 10)
 })
+
+test('created foods and recipe dishes by any user are shared and accessible to all users', async (t) => {
+  const { client } = await start(t, { signup: 'open' })
+  const userA = client()
+  await userA('POST', '/api/signup', { name: 'Chef Asha', password: pw() })
+
+  const userB = client()
+  await userB('POST', '/api/signup', { name: 'Fitness Fan Ravi', password: pw() })
+
+  const guest = client()
+
+  // 1. Initially shared recipes is empty
+  const initial = await guest('GET', '/api/recipes')
+  assert.equal(initial.status, 200)
+  assert.deepEqual(initial.body.recipes, [])
+
+  // 2. User A creates a custom branded food AND a recipe dish via sync PUT /api/state
+  const customFoodA = {
+    id: 'food_yogurt_999',
+    name: 'Artisan Greek Yogurt',
+    kind: 'food',
+    portions: [{ name: 'cup', grams: 150 }],
+    per100: { kcal: 90, protein: 10, carbs: 4, fat: 3 },
+  }
+  const dishA = {
+    id: 'dish_biryani_123',
+    name: 'High Protein Chicken Biryani',
+    kind: 'dish',
+    servings: 4,
+    per100: { kcal: 165, protein: 18, carbs: 14, fat: 4 },
+    ingredients: [
+      { name: 'Basmati Rice', grams: 200, per100: { kcal: 130, protein: 2.7, carbs: 28, fat: 0.3 } },
+      { name: 'Chicken Breast', grams: 400, per100: { kcal: 165, protein: 31, carbs: 0, fat: 3.6 } },
+    ],
+  }
+  const syncRes = await userA('PUT', '/api/state', {
+    rev: 0,
+    state: { ...empty, foods: [customFoodA, dishA] },
+  })
+  assert.equal(syncRes.status, 200)
+
+  // Give async disk sync a moment
+  await new Promise((r) => setTimeout(r, 100))
+
+  // 3. User B and Guest can both retrieve Chef Asha's custom food and recipe dish
+  const sharedAfterA = await userB('GET', '/api/recipes')
+  assert.equal(sharedAfterA.status, 200)
+  assert.equal(sharedAfterA.body.recipes.length, 2)
+  const namesA = sharedAfterA.body.recipes.map((r) => r.name).sort()
+  assert.deepEqual(namesA, ['Artisan Greek Yogurt', 'High Protein Chicken Biryani'])
+  assert.equal(sharedAfterA.body.recipes[0].authorName, 'Chef Asha')
+
+  const guestView = await guest('GET', '/api/recipes')
+  assert.equal(guestView.body.recipes.length, 2)
+
+  // 4. User B posts their own recipe dish directly via POST /api/recipes
+  const dishB = {
+    id: 'dish_moong_dal_456',
+    name: 'Sprouted Moong Khichdi',
+    kind: 'dish',
+    servings: 2,
+    per100: { kcal: 110, protein: 8, carbs: 18, fat: 1 },
+    ingredients: [{ name: 'Sprouted Moong', grams: 150 }],
+  }
+  const postRes = await userB('POST', '/api/recipes', dishB)
+  assert.equal(postRes.status, 200)
+  assert.equal(postRes.body.ok, true)
+  assert.equal(postRes.body.recipe.authorName, 'Fitness Fan Ravi')
+
+  // 5. All 3 foods/recipes are now visible across all users
+  const bothRecipes = (await userA('GET', '/api/recipes')).body.recipes
+  assert.equal(bothRecipes.length, 3)
+
+  // 6. User B (non-admin, non-author) cannot delete User A's dish
+  const delForbidden = await userB('DELETE', '/api/recipes', { id: 'dish_biryani_123' })
+  assert.equal(delForbidden.status, 403)
+
+  // 7. User B can delete their own dish
+  const delOk = await userB('DELETE', '/api/recipes', { id: 'dish_moong_dal_456' })
+  assert.equal(delOk.status, 200)
+  assert.equal((await userA('GET', '/api/recipes')).body.recipes.length, 2)
+
+  // 8. User A (author/admin) can delete their items
+  const delAOk = await userA('DELETE', '/api/recipes', { id: 'dish_biryani_123' })
+  assert.equal(delAOk.status, 200)
+  const delFoodOk = await userA('DELETE', '/api/recipes', { id: 'food_yogurt_999' })
+  assert.equal(delFoodOk.status, 200)
+  assert.equal((await guest('GET', '/api/recipes')).body.recipes.length, 0)
+})
+

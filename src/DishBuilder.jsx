@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from './components/Icon'
 import Dialog from './Dialog'
 import FoodPicker from './FoodPicker'
 import { buildDish, dishTotals } from './lib/dish'
@@ -6,12 +7,8 @@ import { scale } from './lib/nutrition'
 import { energy } from './lib/units'
 import Nutrition from './Nutrition'
 import { useSettings, useStore } from './store'
+import { api, useSync } from './sync'
 
-/**
- * Make a dish by joining ingredients; it is saved with your foods, so it syncs and shows up in
- * every search. `dish` opens an existing one to change it; `start` pre-fills ingredients (for
- * "save this meal as a dish"). Calls onSaved(id).
- */
 export default function DishBuilder({ dish, start, onClose, onSaved }) {
   const { units } = useSettings()
   const [name, setName] = useState(dish?.name || '')
@@ -19,7 +16,7 @@ export default function DishBuilder({ dish, start, onClose, onSaved }) {
   const [servings, setServings] = useState(dish?.servings || 1)
   const [cooked, setCooked] = useState(dish?.cookedGrams || '')
   const [picking, setPicking] = useState(false)
-  const [view, setView] = useState('serving') // which amount the nutrition panel shows
+  const [view, setView] = useState('serving')
   const draft = buildDish({ name: name || 'Dish', ingredients: items, servings, cookedGrams: +cooked || null })
   const totals = dishTotals(draft)
   const kcal = (v) => `${Math.round(energy(v, units.energy))} ${units.energy}`
@@ -28,97 +25,190 @@ export default function DishBuilder({ dish, start, onClose, onSaved }) {
   const save = (e) => {
     e.preventDefault()
     if (!items.length || !name.trim()) return
-    const id = useStore.getState().addFood(buildDish({ id: dish?.id, created: dish?.created, name, ingredients: items, servings, cookedGrams: +cooked || null }))
+    const user = useSync.getState().user
+    const newDish = buildDish({
+      id: dish?.id,
+      created: dish?.created,
+      name,
+      ingredients: items,
+      servings,
+      cookedGrams: +cooked || null,
+    })
+    newDish.authorName = user?.name || dish?.authorName || 'Community Chef'
+    newDish.authorId = user?.id || dish?.authorId || 'local'
+
+    const id = useStore.getState().addFood(newDish)
+    useStore.getState().addSharedRecipe(newDish)
+
+    // Make available to all other users immediately on server
+    api('POST', '/api/recipes', newDish).catch(() => {})
+
     onSaved?.(id)
   }
 
   return (
-    <Dialog title={dish ? `Edit ${dish.name}` : 'Make a dish'} onClose={onClose} wide>
+    <Dialog title={dish ? `Edit ${dish.name}` : 'Make Recipe Dish'} onClose={onClose} wide>
       <form onSubmit={save}>
-        <label>
-          Dish name
-          <input value={name} onChange={(e) => setName(e.target.value)} required maxLength="80" placeholder="Rajma chawal, mum’s dal…" />
-        </label>
+        <div className="sect-b" style={{ marginBottom: 14 }}>
+          <div className="lrow">
+            <span className="lrow-m">
+              <span className="lrow-t">Dish Name</span>
+            </span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              maxLength="80"
+              placeholder="Rajma chawal, mum’s dal…"
+              className="field"
+              style={{ width: '180px', textAlign: 'right' }}
+            />
+          </div>
+        </div>
 
-        <h3>Ingredients</h3>
-        <ul className="list">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <span className="sect-t" style={{ padding: 0 }}>Ingredients</span>
+          <button
+            type="button"
+            className="btn plain xs"
+            onClick={() => setPicking(true)}
+          >
+            <Icon name="plus" /> Add ingredient
+          </button>
+        </div>
+
+        <div className="sect-b" style={{ marginBottom: 14 }}>
           {items.map((it, i) => (
-            <li key={i} className="row">
-              <span>{it.name}</span>
+            <div key={i} className="lrow">
+              <span className="lrow-m">
+                <span className="lrow-t">{it.name}</span>
+                <span className="lrow-s">{kcal(scale(it.per100, it.grams).kcal)}</span>
+              </span>
               <input
                 type="number"
                 min="1"
                 step="any"
                 value={Math.round(it.grams * 10) / 10}
-                onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, grams: +e.target.value || 0 } : x)))}
-                aria-label={`Grams of ${it.name}`}
-                className="grams"
+                onChange={(e) =>
+                  setItems(
+                    items.map((x, j) => (j === i ? { ...x, grams: +e.target.value || 0 } : x))
+                  )
+                }
+                className="num"
+                style={{ width: '70px', textAlign: 'right' }}
               />
-              <small>g · {kcal(scale(it.per100, it.grams).kcal)}</small>
-              <button type="button" className="ghost" onClick={() => setItems(items.filter((_, j) => j !== i))} aria-label={`Remove ${it.name}`}>
-                ✕
+              <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--label-2)' }}>g</span>
+              <button
+                type="button"
+                className="iconbtn"
+                style={{ width: 26, height: 26, fontSize: 13 }}
+                onClick={() => setItems(items.filter((_, j) => j !== i))}
+                aria-label={`Remove ${it.name}`}
+              >
+                <Icon name="xmark" />
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
-        <div className="actions start">
-          <button type="button" className="ghost" onClick={() => setPicking(true)}>
-            + Add ingredient
-          </button>
-        </div>
-        {!items.length && <p className="muted">Add each ingredient with its raw weight. Your own foods and dishes work as ingredients too.</p>}
 
-        <div className="fields">
-          <label>
-            Servings it makes
-            <input type="number" min="1" step="1" required value={servings} onChange={(e) => setServings(Math.max(1, Math.round(+e.target.value) || 1))} />
-          </label>
-          <label>
-            Cooked weight, g (optional)
-            <input type="number" min="1" step="any" value={cooked} onChange={(e) => setCooked(e.target.value)} placeholder={draft.rawGrams ? `raw: ${Math.round(draft.rawGrams)}` : ''} />
-          </label>
+          {!items.length && (
+            <div style={{ padding: '16px', textAlign: 'center' }} className="muted">
+              Add each ingredient with its raw weight. Your custom foods work as ingredients too.
+            </div>
+          )}
         </div>
-        <p className="muted">
-          Weigh the finished pot if you can: cooking adds or drives off water, which changes what 100 g of the dish holds.
-        </p>
+
+        <div className="sect-b" style={{ marginBottom: 14 }}>
+          <div className="lrow">
+            <span className="lrow-m">
+              <span className="lrow-t">Servings it makes</span>
+            </span>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              required
+              value={servings}
+              className="num"
+              style={{ width: '60px', textAlign: 'right' }}
+              onChange={(e) => setServings(Math.max(1, Math.round(+e.target.value) || 1))}
+            />
+          </div>
+          <div className="lrow">
+            <span className="lrow-m">
+              <span className="lrow-t">Cooked weight (g, optional)</span>
+            </span>
+            <input
+              type="number"
+              min="1"
+              step="any"
+              value={cooked}
+              className="num"
+              style={{ width: '80px', textAlign: 'right' }}
+              onChange={(e) => setCooked(e.target.value)}
+              placeholder={draft.rawGrams ? `raw: ${Math.round(draft.rawGrams)}` : ''}
+            />
+          </div>
+        </div>
 
         {items.length > 0 && (
-          <>
-            <p className="big">
+          <div className="card" style={{ marginBottom: 14, padding: 14 }}>
+            <p style={{ margin: '0 0 10px', fontSize: 'var(--fs-title3)', fontWeight: 700 }}>
               {kcal(totals.kcal / draft.servings)}
-              <small> per serving{serving ? ` (${serving.grams} g)` : ''} · {kcal(totals.kcal)} in all</small>
+              <small style={{ fontWeight: 400, fontSize: 'var(--fs-footnote)', color: 'var(--label-2)' }}>
+                {' '}per serving{serving ? ` (${serving.grams} g)` : ''} · {kcal(totals.kcal)} in all
+              </small>
             </p>
-            <div className="segmented" role="radiogroup" aria-label="Show nutrition for">
-              {[
-                ['serving', 'One serving'],
-                ['all', 'Whole dish'],
-              ].map(([v, label]) => (
-                <button key={v} type="button" role="radio" aria-checked={view === v} onClick={() => setView(v)}>
-                  {label}
-                </button>
-              ))}
+            <div className="seg" style={{ '--n': 2, '--i': view === 'serving' ? 0 : 1, marginBottom: 12 }}>
+              <span className="seg-sel" aria-hidden="true" />
+              <button
+                type="button"
+                className={view === 'serving' ? 'on' : ''}
+                onClick={() => setView('serving')}
+              >
+                One serving
+              </button>
+              <button
+                type="button"
+                className={view === 'all' ? 'on' : ''}
+                onClick={() => setView('all')}
+              >
+                Whole dish
+              </button>
             </div>
             <Nutrition
               per100={draft.per100}
               grams={view === 'serving' ? (serving?.grams ?? 0) : draft.cookedGrams || draft.rawGrams}
               amountLabel={view === 'serving' ? '1 serving' : 'Whole dish'}
             />
-          </>
+          </div>
         )}
 
-        <div className="actions">
-          <button type="button" className="ghost" onClick={onClose}>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="button" className="btn ghost" onClick={onClose} style={{ flex: 1 }}>
             Cancel
           </button>
-          <button disabled={!items.length}>{dish ? 'Save changes' : 'Save dish'}</button>
+          <button type="submit" className="btn primary" disabled={!items.length} style={{ flex: 2 }}>
+            {dish ? 'Save Changes' : 'Save Dish'}
+          </button>
         </div>
       </form>
+
       {picking && (
         <FoodPicker
           title="Add ingredient"
           onClose={() => setPicking(false)}
           onPick={(food, grams) => {
-            if (food.id !== dish?.id) setItems([...items, { name: food.name, grams, per100: food.per100, foodId: food.id, source: food.source }])
+            if (food.id !== dish?.id)
+              setItems([
+                ...items,
+                {
+                  name: food.name,
+                  grams,
+                  per100: food.per100,
+                  foodId: food.id,
+                  source: food.source,
+                },
+              ])
             setPicking(false)
           }}
         />

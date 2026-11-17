@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import Dialog from './Dialog'
+import Icon from './components/Icon'
 import { scale } from './lib/nutrition'
-import { api } from './sync'
+import { buildDish } from './lib/dish'
+import { useStore } from './store'
+import { useUI } from './store/useUI'
+import { api, useSync } from './sync'
 
 // Shrink the photo before upload: smaller, faster, and plenty for recognising food.
 async function toJpegBase64(file, max = 1280) {
@@ -14,52 +18,132 @@ async function toJpegBase64(file, max = 1280) {
   return canvas.toDataURL('image/jpeg', 0.8).split(',')[1]
 }
 
-// Photo of a plate -> AI-estimated items the user corrects, then adds.
-// Calls onAdd([{ name, grams, per100 }]).
-export default function PhotoLog({ title, onAdd, onClose }) {
+export default function PhotoLog({ title, onAdd, onAddDish, onClose }) {
+  const { toast } = useUI.getState()
+  const user = useSync((s) => s.user)
   const [items, setItems] = useState(null)
+  const [dishName, setDishName] = useState('')
   const [status, setStatus] = useState('')
 
   const read = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    setStatus('Looking at your plate…')
+    setStatus('Analyzing your meal plate with AI…')
     setItems(null)
     try {
       const r = await api('POST', '/api/ai/photo', { image: await toJpegBase64(file) })
       if (!r.ok) return setStatus(r.body?.error || 'That did not work. Try again.')
-      setItems(r.body.items.map((i) => ({ ...i, on: true })))
-      setStatus(r.body.items.length ? '' : 'No food found in that photo.')
+      const loadedItems = r.body.items || []
+      setItems(loadedItems.map((i) => ({ ...i, on: true })))
+      if (r.body.dish?.name) {
+        setDishName(r.body.dish.name)
+      } else if (loadedItems.length) {
+        setDishName(loadedItems.map((i) => i.name).slice(0, 3).join(' with '))
+      }
+      setStatus(loadedItems.length ? '' : 'No food recognized in that photo.')
     } catch {
-      setStatus('Could not read or send that photo.')
+      setStatus('Could not read or process that photo.')
     }
   }
+
   const edit = (i, patch) => setItems(items.map((it, j) => (j === i ? { ...it, ...patch } : it)))
   const chosen = (items || []).filter((i) => i.on && i.grams > 0)
 
+  const saveDish = () => {
+    if (!chosen.length) return
+    const authorName = user?.name || 'Community Member'
+    const authorId = user?.id || 'local'
+    const ingredients = chosen.map((i) => ({
+      name: i.name,
+      grams: i.grams,
+      per100: i.per100,
+    }))
+    const dish = buildDish({
+      name: dishName.trim() || 'Custom Recipe Dish',
+      ingredients,
+      servings: 1,
+    })
+    const newDish = {
+      ...dish,
+      id: `dish_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      kind: 'dish',
+      authorName,
+      authorId,
+      sharedAt: new Date().toISOString(),
+    }
+
+    useStore.getState().addFood(newDish)
+    useStore.getState().addSharedRecipe(newDish)
+    api('POST', '/api/recipes', newDish).catch(() => {})
+
+    toast(`Created recipe "${newDish.name}" (shared to all users)`)
+
+    if (onAddDish) {
+      onAddDish(newDish)
+    } else {
+      onAdd([{
+        name: newDish.name,
+        grams: newDish.rawGrams,
+        per100: newDish.per100,
+        foodId: newDish.id,
+      }])
+    }
+  }
+
   return (
     <Dialog title={title} onClose={onClose}>
-      <p className="muted">Sent to your own AI provider (Settings → AI). Every item is a draft you can fix.</p>
-      <input type="file" accept="image/*" capture="environment" onChange={read} aria-label="Photo of your meal" />
+      <p className="muted" style={{ margin: '0 0 12px' }}>
+        Capture or upload a meal photo. Your AI recognizes dishes, estimates portions, and lets you verify before logging.
+      </p>
+
+      <div style={{ marginBottom: 14 }}>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={read}
+          className="field"
+          aria-label="Photo of your meal"
+        />
+      </div>
+
       {status && (
-        <p className="muted" role="status">
+        <p className="muted" role="status" style={{ margin: '8px 0' }}>
           {status}
         </p>
       )}
+
       {items?.length > 0 && (
         <>
-          <p className="muted">AI estimates. Fix the grams and untick anything wrong.</p>
-          <ul className="list">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <p className="sect-t" style={{ margin: 0 }}>Detected Dishes & Ingredients</p>
+          </div>
+
+          <div className="sect-b" style={{ marginBottom: 14 }}>
+            <div className="lrow">
+              <span className="lrow-m"><span className="lrow-t">Dish Title</span></span>
+              <input
+                value={dishName}
+                onChange={(e) => setDishName(e.target.value)}
+                placeholder="Recipe dish name"
+                className="field"
+                style={{ width: '180px', textAlign: 'right' }}
+              />
+            </div>
             {items.map((it, i) => (
-              <li key={i} className="row">
+              <div key={i} className="lrow">
                 <input
                   type="checkbox"
                   checked={it.on}
                   onChange={(e) => edit(i, { on: e.target.checked })}
                   aria-label={`Include ${it.name}`}
-                  style={{ width: 'auto' }}
+                  className="chk on"
+                  style={{ width: 'auto', marginRight: 6 }}
                 />
-                <span>{it.name}</span>
+                <span className="lrow-m">
+                  <span className="lrow-t">{it.name}</span>
+                  <span className="lrow-s">{Math.round(scale(it.per100, it.grams).kcal)} kcal</span>
+                </span>
                 <input
                   type="number"
                   min="1"
@@ -67,15 +151,37 @@ export default function PhotoLog({ title, onAdd, onClose }) {
                   value={it.grams}
                   onChange={(e) => edit(i, { grams: +e.target.value })}
                   aria-label={`Grams of ${it.name}`}
-                  style={{ width: '5.5rem' }}
+                  className="num"
+                  style={{ width: '70px', textAlign: 'right' }}
                 />
-                <small>{Math.round(scale(it.per100, it.grams).kcal)} kcal</small>
-              </li>
+                <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--label-2)' }}>g</span>
+              </div>
             ))}
-          </ul>
-          <div className="actions">
-            <button type="button" disabled={!chosen.length} onClick={() => onAdd(chosen)}>
-              Add {chosen.length} item{chosen.length === 1 ? '' : 's'}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                type="button"
+                className="btn tinted"
+                disabled={!chosen.length}
+                onClick={saveDish}
+                style={{ flex: 1 }}
+              >
+                <Icon name="bowl" /> Save as Recipe Dish & Log
+              </button>
+              <button
+                type="button"
+                className="btn primary"
+                disabled={!chosen.length}
+                onClick={() => onAdd(chosen)}
+                style={{ flex: 1 }}
+              >
+                <Icon name="check" /> Log {chosen.length} Item{chosen.length === 1 ? '' : 's'}
+              </button>
+            </div>
+            <button type="button" className="btn ghost sm" onClick={onClose} style={{ alignSelf: 'center' }}>
+              Cancel
             </button>
           </div>
         </>

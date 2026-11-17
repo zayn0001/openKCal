@@ -11,6 +11,7 @@ import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { z } from 'zod'
 import { TOOLS, agentSystem, resolveProposal, searchResults } from '../src/lib/agent.js'
+import { buildDish } from '../src/lib/dish.js'
 import { HttpError, readJson, serialize, writeJson } from './http.js'
 import { checkUrl, safeFetch, seal, unseal } from './secure.js'
 
@@ -41,6 +42,20 @@ const Item = z.object({
 })
 const Meal = z.object({ items: z.array(Item) })
 
+const LabelItem = z.object({
+  name: z.string(),
+  portionName: z.string().optional().default('serving'),
+  portionGrams: z.number().optional().default(100),
+  kcal_per_100g: z.number(),
+  protein_per_100g: z.number(),
+  carbs_per_100g: z.number(),
+  sugar_per_100g: z.number().optional().default(0),
+  fat_per_100g: z.number(),
+  saturated_fat_per_100g: z.number().optional().default(0),
+  fibre_per_100g: z.number().optional().default(0),
+  sodium_mg_per_100g: z.number().optional().default(0),
+})
+
 const PHOTO_SYSTEM = `You estimate the contents of a meal from a photo for a food diary.
 List each distinct food or dish you can see as one item: a short plain name, your best estimate of the
 portion in grams as served, and typical nutrient values per 100 g for that food as prepared.
@@ -50,6 +65,16 @@ than a range. If the photo shows no food, return an empty list.`
 
 const JSON_SHAPE = `Answer with JSON only, no other text, in exactly this shape:
 {"items":[{"name":"","grams":0,"kcal_per_100g":0,"protein_per_100g":0,"carbs_per_100g":0,"sugar_per_100g":0,"fat_per_100g":0,"saturated_fat_per_100g":0,"fibre_per_100g":0,"sodium_mg_per_100g":0}]}`
+
+const LABEL_SYSTEM = `You parse nutrition facts labels and branded food packaging photos to create a verified food entry.
+Given a photo of the nutrition label (and an optional photo of the entire product or packaging front), extract:
+1. Product name and brand. If a front photo is present, use it for the exact brand name and product title.
+2. Standard serving portion name (e.g. "1 bar", "1 cup", "1 bottle", "serving", "bowl") and portion weight in grams.
+3. Nutrient values normalized per 100 g. If the label only lists values per serving, accurately calculate them per 100g using the serving size.
+If the photo does not show a readable nutrition facts label or food product, return name "Custom Food" with 0 values.`
+
+const LABEL_JSON_SHAPE = `Answer with JSON only, in exactly this shape:
+{"name":"","portionName":"serving","portionGrams":100,"kcal_per_100g":0,"protein_per_100g":0,"carbs_per_100g":0,"sugar_per_100g":0,"fat_per_100g":0,"saturated_fat_per_100g":0,"fibre_per_100g":0,"sodium_mg_per_100g":0}`
 
 const REVIEW_SYSTEM = `You are reviewing one week of a person's food diary against their own targets.
 The data is JSON: daily totals, their targets, and weight change. Write for the person directly, in plain
@@ -81,6 +106,24 @@ export const cleanItems = (items) =>
       sodium: clamp(i.sodium_mg_per_100g, 0, 40000),
     },
   }))
+
+export const cleanLabelItem = (i) => ({
+  name: String(i?.name || 'Custom Food').slice(0, 80),
+  portions:
+    i?.portionName && Number(i?.portionGrams) > 0
+      ? [{ name: String(i.portionName).slice(0, 30), grams: Math.round(clamp(i.portionGrams, 1, 2000)) }]
+      : [],
+  per100: {
+    kcal: clamp(i?.kcal_per_100g ?? 0, 0, 900),
+    protein: clamp(i?.protein_per_100g ?? 0, 0, 100),
+    carbs: clamp(i?.carbs_per_100g ?? 0, 0, 100),
+    sugar: clamp(i?.sugar_per_100g ?? 0, 0, 100),
+    fat: clamp(i?.fat_per_100g ?? 0, 0, 100),
+    satFat: clamp(i?.saturated_fat_per_100g ?? 0, 0, 100),
+    fibre: clamp(i?.fibre_per_100g ?? 0, 0, 100),
+    sodium: clamp(i?.sodium_mg_per_100g ?? 0, 0, 40000),
+  },
+})
 
 /** The JSON object in a model's text answer, tolerating code fences and chatter around it. */
 export function parseJsonAnswer(text) {
@@ -159,10 +202,13 @@ function anthropicAdapter({ key, model }) {
       throw new AiError(502, 'Could not reach Anthropic')
     }
   }
-  const content = (job) => [
-    ...(job.image ? [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: job.image } }] : []),
-    { type: 'text', text: job.prompt },
-  ]
+  const content = (job) => {
+    const imgs = Array.isArray(job.images) ? job.images : job.image ? [job.image] : []
+    return [
+      ...imgs.map((img) => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: img } })),
+      { type: 'text', text: job.prompt },
+    ]
+  }
   return {
     async meal(job) {
       const res = await call(() =>
@@ -175,6 +221,19 @@ function anthropicAdapter({ key, model }) {
         }),
       )
       if (res.stop_reason === 'refusal' || !res.parsed_output) throw new AiError(422, 'The model could not read that photo')
+      return res.parsed_output
+    },
+    async label(job) {
+      const res = await call(() =>
+        client.messages.parse({
+          model,
+          max_tokens: 16000,
+          system: job.system,
+          messages: [{ role: 'user', content: content(job) }],
+          output_config: { ...(current && { effort: 'medium' }), format: zodOutputFormat(LabelItem) },
+        }),
+      )
+      if (res.stop_reason === 'refusal' || !res.parsed_output) throw new AiError(422, 'The model could not read that label photo')
       return res.parsed_output
     },
     async text(job) {
@@ -227,14 +286,16 @@ function anthropicAdapter({ key, model }) {
 function chatAdapter({ key, model, base, headers = {}, allowLan, label, openai }) {
   const url = (rest) => withVersion(base, '/v1', rest)
   const auth = { ...headers, ...(key && { authorization: `Bearer ${key}` }) }
-  const run = async (job, json) => {
-    const user = job.image
-      ? [{ type: 'text', text: job.prompt }, { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${job.image}` } }]
+  const run = async (job, json, jsonShape) => {
+    const imgs = Array.isArray(job.images) ? job.images : job.image ? [job.image] : []
+    const user = imgs.length
+      ? [{ type: 'text', text: job.prompt }, ...imgs.map((img) => ({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${img}` } }))]
       : job.prompt
+    const shape = jsonShape || JSON_SHAPE
     const payload = {
       model,
       messages: [
-        { role: 'system', content: json ? `${job.system}\n\n${JSON_SHAPE}` : job.system },
+        { role: 'system', content: json ? `${job.system}\n\n${shape}` : job.system },
         { role: 'user', content: user },
       ],
       // OpenAI's current models want max_completion_tokens; most compatible servers only know max_tokens.
@@ -258,6 +319,7 @@ function chatAdapter({ key, model, base, headers = {}, allowLan, label, openai }
   }
   return {
     meal: async (job) => parseJsonAnswer(await run(job, true)),
+    label: async (job) => parseJsonAnswer(await run(job, true, LABEL_JSON_SHAPE)),
     text: (job) => run(job, false).then((t) => t.trim()),
     async models() {
       const data = await send(url('/models'), { headers: auth, allowLan }, label)
@@ -306,15 +368,17 @@ function geminiAdapter({ key, model, base }) {
   const label = 'Google Gemini'
   // The key goes in a header, never in ?key=, so it stays out of logs and error messages.
   const headers = { 'x-goog-api-key': key, 'content-type': 'application/json' }
-  const run = async (job, json) => {
-    const parts = [{ text: job.prompt }, ...(job.image ? [{ inline_data: { mime_type: 'image/jpeg', data: job.image } }] : [])]
+  const run = async (job, json, jsonShape) => {
+    const imgs = Array.isArray(job.images) ? job.images : job.image ? [job.image] : []
+    const parts = [{ text: job.prompt }, ...imgs.map((img) => ({ inline_data: { mime_type: 'image/jpeg', data: img } }))]
+    const shape = jsonShape || JSON_SHAPE
     const data = await send(
       `${base}/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: json ? `${job.system}\n\n${JSON_SHAPE}` : job.system }] },
+          systemInstruction: { parts: [{ text: json ? `${job.system}\n\n${shape}` : job.system }] },
           contents: [{ role: 'user', parts }],
           generationConfig: { maxOutputTokens: 16000, ...(json && { responseMimeType: 'application/json' }) },
         }),
@@ -328,6 +392,7 @@ function geminiAdapter({ key, model, base }) {
   }
   return {
     meal: async (job) => parseJsonAnswer(await run(job, true)),
+    label: async (job) => parseJsonAnswer(await run(job, true, LABEL_JSON_SHAPE)),
     text: (job) => run(job, false).then((t) => t.trim()),
     async agent({ system, prompt, tools, run }) {
       const contents = [{ role: 'user', parts: [{ text: prompt }] }]
@@ -472,13 +537,46 @@ export async function createAi({ dataDir, key, allowLan = () => false }) {
       await writes(() => rm(file(uid), { force: true }))
     },
 
-    /** base64 JPEG -> { items: [{ name, grams, per100 }] } */
+    /** base64 JPEG -> { items: [{ name, grams, per100 }], dish } */
     async photo(uid, image) {
       const { ai } = await ready(uid)
       const out = await ai.meal({ system: PHOTO_SYSTEM, prompt: 'What is on this plate?', image })
       const parsed = Meal.safeParse(out)
-      if (!parsed.success) throw new AiError(502, 'The model answered in a shape Thally could not read. Try again, or try another model.')
-      return { items: cleanItems(parsed.data.items) }
+      if (!parsed.success) throw new AiError(502, 'The model answered in a shape openKCal could not read. Try again, or try another model.')
+      const items = cleanItems(parsed.data.items)
+      let dish = null
+      if (items.length > 0) {
+        const dishName = items.map((i) => i.name).slice(0, 3).join(' with ')
+        const ingredients = items.map((i) => ({
+          name: i.name,
+          grams: i.grams,
+          per100: i.per100,
+        }))
+        const built = buildDish({ name: dishName, ingredients, servings: 1 })
+        dish = {
+          name: dishName,
+          servings: 1,
+          ingredients,
+          rawGrams: built.rawGrams,
+          per100: built.per100,
+          kind: 'dish',
+        }
+      }
+      return { items, dish }
+    },
+
+    /** Parse nutrition label photo (+ optional package photo) -> { food } */
+    async label(uid, { image, packageImage }) {
+      const { ai } = await ready(uid)
+      const images = [image, packageImage].filter(Boolean)
+      if (!images.length) throw new AiError(400, 'Image required to parse nutrition label')
+      const out = await ai.label({
+        system: LABEL_SYSTEM,
+        prompt: 'Parse the nutrition facts label and product name from this photo.',
+        images,
+      })
+      const parsed = LabelItem.safeParse(out)
+      return { food: cleanLabelItem(parsed.success ? parsed.data : out) }
     },
 
     /**

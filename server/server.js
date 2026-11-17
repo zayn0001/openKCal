@@ -70,6 +70,40 @@ export async function createApp({
   const push = await createPush({ dataDir, readState, tickMs: pushTickMs, subject: pushSubject })
   const stateWrites = serialize()
 
+  // All recipe dishes made by any user are shared across all users
+  const recipesFile = path.join(dataDir, 'recipes.json')
+  const readRecipes = async () => await readJson(recipesFile, [])
+  const writeRecipes = async (list) => writeJson(recipesFile, list)
+
+  async function syncFoodsToCommunity(uid, foods = [], gone = []) {
+    const user = accounts.user(uid)
+    const authorName = user?.name || 'Community Member'
+    const current = await readRecipes()
+    const map = new Map(current.map((r) => [r.id, r]))
+
+    // Handle deletions if user removed a food or dish they owned
+    if (Array.isArray(gone) && gone.length) {
+      for (const id of gone) {
+        if (map.has(id) && map.get(id).authorId === uid) {
+          map.delete(id)
+        }
+      }
+    }
+
+    for (const f of foods || []) {
+      if (!f || !f.id) continue
+      const isDish = f.kind === 'dish' || Array.isArray(f.ingredients)
+      map.set(f.id, {
+        ...f,
+        kind: isDish ? 'dish' : 'food',
+        authorName: f.authorName || authorName,
+        authorId: f.authorId || uid,
+        sharedAt: f.sharedAt || new Date().toISOString(),
+      })
+    }
+    await writeRecipes([...map.values()])
+  }
+
   const cookieToken = (req) => /(?:^|;\s*)sid=([a-f0-9]{64})/.exec(req.headers.cookie || '')?.[1] || ''
   // The proxy appends the address it saw, so the last entry is the one a client cannot forge.
   const clientIp = (req) => (trustProxy && req.headers['x-forwarded-for']?.split(',').at(-1).trim()) || req.socket.remoteAddress
@@ -338,9 +372,46 @@ export async function createApp({
           return current
         }
         await writeJson(stateFile(uid), { rev: current.rev + 1, state: b.state })
+        syncFoodsToCommunity(uid, b.state.foods, b.state.gone).catch((e) => console.error('community foods sync:', e.message))
         hooks.onSync(uid, current.state, b.state).catch((e) => console.error('webhooks:', e.message))
         return { rev: current.rev + 1 }
       })
+    },
+
+    // ---- shared foods & recipe dishes across all users ----
+    'GET /api/recipes': async () => ({ recipes: await readRecipes() }),
+
+    'POST /api/recipes': async (req, res, uid) => {
+      const item = await body(req, 100_000)
+      if (!item || (!item.name && !item.ingredients && !item.per100)) throw new HttpError(400, 'Not a valid food or recipe')
+      const user = uid ? accounts.user(uid) : null
+      const authorName = item.authorName || user?.name || 'Community Member'
+      const isDish = item.kind === 'dish' || Array.isArray(item.ingredients)
+      const saved = {
+        ...item,
+        kind: isDish ? 'dish' : 'food',
+        id: item.id || randomId(),
+        authorName,
+        authorId: uid || item.authorId || 'guest',
+        sharedAt: item.sharedAt || new Date().toISOString(),
+      }
+      const current = await readRecipes()
+      const list = [saved, ...current.filter((r) => r.id !== saved.id)]
+      await writeRecipes(list)
+      return { ok: true, recipe: saved, food: saved }
+    },
+
+    'DELETE /api/recipes': async (req, res, uid) => {
+      const { id } = (await body(req, 1000)) || {}
+      if (!id) throw new HttpError(400, 'Recipe id required')
+      const current = await readRecipes()
+      const existing = current.find((r) => r.id === id)
+      if (!existing) return { ok: true }
+      if (existing.authorId && existing.authorId !== uid && !accounts.isAdmin(uid)) {
+        throw new HttpError(403, 'You can only delete recipes you created')
+      }
+      await writeRecipes(current.filter((r) => r.id !== id))
+      return { ok: true }
     },
 
     // Reset everything: an empty state with a new revision, so other devices take it instead of merging.
@@ -380,6 +451,15 @@ export async function createApp({
       if (typeof b?.image !== 'string' || !/^[A-Za-z0-9+/]+=*$/.test(b.image)) throw new HttpError(400, 'image: base64 JPEG')
       aiLimit(uid)
       return ai.photo(uid, b.image)
+    },
+    'POST /api/ai/label': async (req, res, uid) => {
+      const b = await body(req, 16_000_000)
+      if (typeof b?.image !== 'string' || !/^[A-Za-z0-9+/]+=*$/.test(b.image)) throw new HttpError(400, 'image: base64 JPEG')
+      if (b.packageImage && (typeof b.packageImage !== 'string' || !/^[A-Za-z0-9+/]+=*$/.test(b.packageImage))) {
+        throw new HttpError(400, 'packageImage: base64 JPEG')
+      }
+      aiLimit(uid)
+      return ai.label(uid, { image: b.image, packageImage: b.packageImage })
     },
     // "I had two rotis and a bowl of dal": a proposal of entries and new dishes to confirm.
     'POST /api/ai/describe': async (req, res, uid) => {
@@ -521,7 +601,7 @@ export async function createApp({
   const PUBLIC = new Set([
     'GET /api/health', 'GET /api/me', 'POST /api/signup', 'POST /api/signup/passkey/options', 'POST /api/signup/passkey/verify',
     'POST /api/login', 'POST /api/login/passkey/options', 'POST /api/login/passkey/verify', 'POST /api/login/reset',
-    'POST /api/login/device', 'POST /api/logout',
+    'POST /api/login/device', 'POST /api/logout', 'GET /api/recipes', 'POST /api/recipes',
   ])
 
   // The download page and the Android app, from the repository's website/ and releases/ folders.

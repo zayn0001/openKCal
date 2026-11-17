@@ -1,3 +1,4 @@
+import Icon from '../components/Icon'
 import { fmtWeight, weightFromKg, weightToKg } from '../lib/units'
 import { today, useSettings, useStore } from '../store'
 
@@ -39,7 +40,17 @@ export default function Weight() {
           e.target.weight.value = ''
         }}
       >
-        <h2>Log weight</h2>
+        <div className="card-head">
+          <div className="card-head-main">
+            <span className="card-head-g icon-tint-sky">
+              <Icon name="scale" />
+            </span>
+            <div className="card-head-t">
+              <span className="card-head-title">Log Body Weight</span>
+              <span className="card-head-sub">Track daily weigh-ins and progress</span>
+            </div>
+          </div>
+        </div>
         <div className="fields">
           <label>
             Date
@@ -47,30 +58,50 @@ export default function Weight() {
           </label>
           <label>
             Weight ({unit})
-            <input name="weight" type="number" min={unit === 'lb' ? 44 : 20} max={unit === 'lb' ? 880 : 400} step="0.1" required />
+            <input name="weight" type="number" min={unit === 'lb' ? 44 : 20} max={unit === 'lb' ? 880 : 400} step="0.1" placeholder={`e.g. ${unit === 'lb' ? '154.5' : '70.2'}`} required />
           </label>
         </div>
-        <button>Save</button>
+        <button className="btn primary" style={{ width: '100%' }}>Save Weigh-in</button>
       </form>
 
       <section className="card">
-        <h2>Trend</h2>
+        <div className="card-head">
+          <div className="card-head-main">
+            <span className="card-head-g font-acc">
+              <Icon name="chart" />
+            </span>
+            <div className="card-head-t">
+              <span className="card-head-title">Weight Trend</span>
+              <span className="card-head-sub">
+                {points.length > 0 ? `Latest: ${points[points.length - 1][1]} ${unit}` : 'No data yet'}
+              </span>
+            </div>
+          </div>
+        </div>
         <Chart points={points} goal={goal != null ? weightFromKg(goal, unit) : null} />
-        {goal != null && <p className="muted">Dashed line: goal {fmtWeight(goal, unit)}</p>}
+        {goal != null && (
+          <p className="muted" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '6px 0 12px' }}>
+            <span style={{ display: 'inline-block', width: 14, height: 2, background: 'var(--orange)' }} /> Goal target: {fmtWeight(goal, unit)}
+          </p>
+        )}
         <ul className="list">
           {points
             .slice(-10)
             .reverse()
             .map(([d]) => (
               <li key={d} className="row">
-                <span>{d}</span>
-                <small>{fmtWeight(weights[d], unit)}</small>
-                <button type="button" className="ghost" onClick={() => removeWeight(d)} aria-label={`Delete the weigh-in on ${d}`}>
-                  ✕
-                </button>
+                <span style={{ fontWeight: 500 }}>{d}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <strong style={{ fontSize: 'var(--fs-body)', color: 'var(--label)' }}>
+                    {fmtWeight(weights[d], unit)}
+                  </strong>
+                  <button type="button" className="ghost" onClick={() => removeWeight(d)} aria-label={`Delete the weigh-in on ${d}`} style={{ minHeight: 28, padding: '4px 8px', borderRadius: '50%' }}>
+                    ✕
+                  </button>
+                </span>
               </li>
             ))}
-          {!points.length && <li className="muted">No weigh-ins yet.</li>}
+          {!points.length && <li className="muted">No weigh-ins yet. Log your first weight above.</li>}
         </ul>
       </section>
     </>

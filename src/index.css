@@ -2113,3 +2113,95 @@ pre.review {
   background: var(--bg);
   color: var(--label);
 }
+
+/* ---------------- Modern Choice Tiles (Intuitive alternative to radio buttons) ---------------- */
+.segmented-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.choice-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--r);
+  background: var(--surface-2);
+  border: 1.5px solid var(--sep-op);
+  color: var(--label);
+  cursor: pointer;
+  text-align: left;
+  transition: transform var(--fast) var(--ease), background var(--fast), border-color var(--fast), box-shadow var(--fast);
+  position: relative;
+  user-select: none;
+}
+.choice-tile:hover {
+  background: var(--surface-3);
+}
+.choice-tile:active {
+  transform: scale(var(--press-scale));
+}
+.choice-tile.active {
+  border-color: var(--acc);
+  background: var(--acc-soft);
+  box-shadow: 0 0 0 1px var(--acc-line);
+}
+.choice-tile.active .choice-tile-title {
+  color: var(--acc-ink);
+}
+.choice-tile-icon {
+  font-size: 20px;
+  color: var(--acc-ink);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.choice-tile-title {
+  font-size: var(--fs-subhead);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.choice-tile-desc {
+  font-size: var(--fs-caption);
+  color: var(--label-2);
+  line-height: 1.3;
+}
+
+/* Enhanced Cards & Elevated Aesthetics across pages */
+.card {
+  box-shadow: 0 4px 20px -6px rgba(0, 0, 0, 0.25);
+  border: var(--hair) solid var(--raised-line);
+  transition: transform var(--fast) var(--ease), box-shadow var(--fast);
+}
+:root[data-theme="light"] .card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: var(--hair) solid rgba(60, 60, 67, 0.12);
+}
+
+/* Polished input and select fields with subtle focus glow */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not(.field):not(.num):not(.stp input),
+select:not(.activity-select) {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not(.field):not(.num):not(.stp input):focus,
+select:not(.activity-select):focus {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px var(--acc-soft);
+}
+
+/* Polished swatches in settings */
+.swatch {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+}
+.swatch:hover {
+  transform: scale(1.08);
+}
+.swatch[aria-checked="true"] {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px var(--acc-line);
+  transform: scale(1.06);
+}

@@ -174,7 +174,7 @@ export default function Onboarding({ onExit }) {
           </p>
         </div>
 
-        {/* Visual Macro Thali Plate */}
+        {/* Visual Macro Nutrition Plate */}
         <div
           className="card"
           style={{
@@ -189,48 +189,41 @@ export default function Onboarding({ onExit }) {
           <svg
             viewBox="0 0 520 520"
             role="img"
-            aria-label="A thali with two rotis, dal, bhindi, rajma, curd and rice, adding up to 1,184 kcal and 46 g of protein"
+            aria-label="A balanced meal bowl with grilled chicken, brown rice, avocado, steamed broccoli, and sweet potato, adding up to 680 kcal and 48 g of protein"
             style={{ width: '100%', maxWidth: 360, height: 'auto', display: 'block' }}
           >
-            <circle cx="260" cy="260" r="248" fill="#2a2e39" />
-            <circle cx="260" cy="260" r="232" fill="#1c1f26" stroke="#3a404d" strokeWidth="2" />
+            <circle cx="260" cy="260" r="248" fill="#242831" />
+            <circle cx="260" cy="260" r="232" fill="#181a20" stroke="#333842" strokeWidth="2" />
             <g>
-              <circle cx="119" cy="209" r="62" fill="#2e3440" />
-              <circle cx="119" cy="209" r="52" fill="#e3a21a" />
-              <text x="119" y="206" textAnchor="middle" fill="#000" fontSize="16" fontWeight="700">Dal</text>
-              <text x="119" y="226" textAnchor="middle" fill="#000" fontSize="13">218 kcal</text>
+              <circle cx="130" cy="180" r="64" fill="#232730" />
+              <circle cx="130" cy="180" r="54" fill="#ff9f0a" />
+              <text x="130" y="176" textAnchor="middle" fill="#000" fontSize="15" fontWeight="700">Chicken</text>
+              <text x="130" y="196" textAnchor="middle" fill="#000" fontSize="13">220 kcal</text>
             </g>
             <g>
-              <circle cx="197" cy="124" r="62" fill="#2e3440" />
-              <circle cx="197" cy="124" r="52" fill="#30d158" />
-              <text x="197" y="121" textAnchor="middle" fill="#000" fontSize="16" fontWeight="700">Bhindi</text>
-              <text x="197" y="141" textAnchor="middle" fill="#000" fontSize="13">96 kcal</text>
+              <circle cx="260" cy="115" r="64" fill="#232730" />
+              <circle cx="260" cy="115" r="54" fill="#30d158" />
+              <text x="260" y="111" textAnchor="middle" fill="#000" fontSize="15" fontWeight="700">Broccoli</text>
+              <text x="260" y="131" textAnchor="middle" fill="#000" fontSize="13">45 kcal</text>
             </g>
             <g>
-              <circle cx="323" cy="124" r="62" fill="#2e3440" />
-              <circle cx="323" cy="124" r="52" fill="#ff453a" />
-              <text x="323" y="121" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="700">Rajma</text>
-              <text x="323" y="141" textAnchor="middle" fill="#fff" fontSize="13">203 kcal</text>
+              <circle cx="390" cy="180" r="64" fill="#232730" />
+              <circle cx="390" cy="180" r="54" fill="#40c8e0" />
+              <text x="390" y="176" textAnchor="middle" fill="#000" fontSize="15" fontWeight="700">Avocado</text>
+              <text x="390" y="196" textAnchor="middle" fill="#000" fontSize="13">140 kcal</text>
             </g>
-            <g>
-              <circle cx="401" cy="209" r="62" fill="#2e3440" />
-              <circle cx="401" cy="209" r="52" fill="#fbfaf4" />
-              <text x="401" y="206" textAnchor="middle" fill="#111" fontSize="16" fontWeight="700">Curd</text>
-              <text x="401" y="226" textAnchor="middle" fill="#111" fontSize="13">61 kcal</text>
-            </g>
-            <ellipse cx="190" cy="372" rx="78" ry="74" fill="#d2a86c" />
-            <ellipse cx="172" cy="358" rx="78" ry="74" fill="#e2bd84" />
-            <text x="172" y="356" textAnchor="middle" fill="#111" fontSize="16" fontWeight="700">2 Rotis</text>
-            <text x="172" y="376" textAnchor="middle" fill="#111" fontSize="13">238 kcal</text>
-            <ellipse cx="350" cy="370" rx="82" ry="62" fill="#fbfaf4" />
-            <text x="350" y="368" textAnchor="middle" fill="#111" fontSize="16" fontWeight="700">Rice</text>
-            <text x="350" y="388" textAnchor="middle" fill="#111" fontSize="13">368 kcal</text>
-            <rect x="176" y="218" width="168" height="74" rx="37" fill="#000" stroke="#30d158" strokeWidth="2" />
-            <text x="260" y="254" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="800">1,184 kcal</text>
-            <text x="260" y="276" textAnchor="middle" fill="#30d158" fontSize="14" fontWeight="600">46g Protein</text>
+            <ellipse cx="190" cy="355" rx="82" ry="68" fill="#e5c185" />
+            <text x="190" y="352" textAnchor="middle" fill="#111" fontSize="15" fontWeight="700">Brown Rice</text>
+            <text x="190" y="372" textAnchor="middle" fill="#111" fontSize="13">180 kcal</text>
+            <ellipse cx="335" cy="355" rx="80" ry="68" fill="#e07a5f" />
+            <text x="335" y="352" textAnchor="middle" fill="#fff" fontSize="15" fontWeight="700">Sweet Potato</text>
+            <text x="335" y="372" textAnchor="middle" fill="#fff" fontSize="13">95 kcal</text>
+            <rect x="176" y="222" width="168" height="74" rx="37" fill="#000" stroke="#30d158" strokeWidth="2" />
+            <text x="260" y="258" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="800">680 kcal</text>
+            <text x="260" y="280" textAnchor="middle" fill="#30d158" fontSize="14" fontWeight="600">48g Protein</text>
           </svg>
           <p className="muted" style={{ marginTop: 16, fontSize: 'var(--fs-caption)', textAlign: 'center' }}>
-            Built for everyday cooking: official Indian Food Composition Tables (IFCT 2017) + 5,431 cooked recipes.
+            Built for everyday nutrition: comprehensive global databases (USDA, ICMR, Open Food Facts) + community-tested recipes.
           </p>
         </div>
 
@@ -286,7 +279,7 @@ export default function Onboarding({ onExit }) {
             </span>
             <h3 style={{ fontSize: 'var(--fs-body)', fontWeight: 700, margin: '0 0 6px' }}>AI Nutritionist Coach</h3>
             <p className="muted" style={{ fontSize: 'var(--fs-subhead)', margin: 0, lineHeight: 1.5 }}>
-              Ask Coach Ria for high-protein Indian swaps, dinner ideas for remaining calories, or analyze meal photos directly inside your chat stream.
+              Ask Coach Ria for personalized macro adjustments, high-protein meal swaps, dinner ideas for remaining calories, or analyze meal photos directly inside your chat stream.
             </p>
           </div>
 

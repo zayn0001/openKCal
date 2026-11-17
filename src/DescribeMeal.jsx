@@ -98,7 +98,7 @@ export default function DescribeMeal({ date, meal, onClose }) {
               maxLength="1000"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="e.g. Two rotis, a katori of dal and some bhindi for lunch, and a cup of tea"
+              placeholder="e.g. Grilled chicken breast, sweet potato, avocado, and steamed broccoli for lunch"
               required
               className="field area"
             />

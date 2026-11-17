@@ -1,12 +1,11 @@
 import { useState } from 'react'
+import Icon from '../components/Icon'
 import { MODULES, PRESETS, presetOf } from '../lib/settings'
-import { ACTIVITY, GOAL, targets } from '../lib/targets'
+import { ACTIVITY, targets } from '../lib/targets'
 import { fmtEnergy, heightFromCm, heightToCm, weightFromKg, weightToKg } from '../lib/units'
 import { latestWeight, useSettings, useStore } from '../store'
 import { useSync } from '../sync'
 
-const GOAL_LABEL = { lose: 'Lose weight', hold: 'Maintain', gain: 'Gain weight' }
-const ACTIVITY_LABEL = { sedentary: 'Sedentary (desk, little walking)', light: 'Light (some walking, 1–3 workouts)', moderate: 'Moderate (3–5 workouts)', active: 'Active (6–7 workouts, physical job)' }
 const r1 = (v) => Math.round(v * 10) / 10
 
 /** A row of choices that behaves like radio buttons. */
@@ -43,6 +42,10 @@ export function ProfilePage() {
   const { units, modules } = useSettings()
   const [saved, setSaved] = useState(false)
   const p = profile || {}
+  const [sex, setSex] = useState(p.sex || 'female')
+  const [goal, setGoal] = useState(p.goal || 'hold')
+  const [activity, setActivity] = useState(p.activity || 'light')
+
   const t = profile && targets({ ...profile, weightKg: latestWeight(weights) ?? profile.weightKg })
   const wMin = units.weight === 'lb' ? 66 : 30
   const wMax = units.weight === 'lb' ? 660 : 300
@@ -56,9 +59,9 @@ export function ProfilePage() {
           e.preventDefault()
           const v = Object.fromEntries(new FormData(e.target))
           useStore.getState().setProfile({
-            sex: v.sex,
-            activity: v.activity,
-            goal: v.goal,
+            sex,
+            activity,
+            goal,
             age: +v.age,
             heightCm: r1(heightToCm(+v.height, units.height)),
             weightKg: r1(weightToKg(+v.weight, units.weight)),
@@ -67,55 +70,115 @@ export function ProfilePage() {
           setSaved(true)
         }}
       >
-        <p className="muted">Used for your daily targets. Change units under Units.</p>
-        <div className="fields">
-          <label>
+        <p className="muted" style={{ marginBottom: 16 }}>
+          Set your body metrics and lifestyle to personalize your daily calories, protein, carbs, and fat targets.
+        </p>
+
+        {/* Biological Sex Selector */}
+        <div style={{ marginBottom: 16 }}>
+          <span style={{ fontSize: 'var(--fs-footnote)', color: 'var(--label-2)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
             Sex
-            <select name="sex" defaultValue={p.sex || 'female'}>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-            </select>
-          </label>
+          </span>
+          <div className="segmented-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            <button
+              type="button"
+              className={`choice-tile ${sex === 'female' ? 'active' : ''}`}
+              onClick={() => { setSex('female'); setSaved(false); }}
+              style={{ alignItems: 'center', textAlign: 'center', padding: '12px 10px' }}
+            >
+              <span className="choice-tile-title">Female</span>
+            </button>
+            <button
+              type="button"
+              className={`choice-tile ${sex === 'male' ? 'active' : ''}`}
+              onClick={() => { setSex('male'); setSaved(false); }}
+              style={{ alignItems: 'center', textAlign: 'center', padding: '12px 10px' }}
+            >
+              <span className="choice-tile-title">Male</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Fitness Goal Selector */}
+        <div style={{ marginBottom: 16 }}>
+          <span style={{ fontSize: 'var(--fs-footnote)', color: 'var(--label-2)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+            Goal
+          </span>
+          <div className="segmented-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            {[
+              ['lose', 'Lose Weight', 'Deficit'],
+              ['hold', 'Maintain', 'Balanced'],
+              ['gain', 'Gain Weight', 'Surplus'],
+            ].map(([id, label, sub]) => (
+              <button
+                key={id}
+                type="button"
+                className={`choice-tile ${goal === id ? 'active' : ''}`}
+                onClick={() => { setGoal(id); setSaved(false); }}
+                style={{ alignItems: 'center', textAlign: 'center', padding: '12px 6px' }}
+              >
+                <span className="choice-tile-title" style={{ fontSize: 'var(--fs-subhead)' }}>{label}</span>
+                <span className="choice-tile-desc" style={{ fontSize: '11px' }}>{sub}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Activity Level Selector */}
+        <div style={{ marginBottom: 18 }}>
+          <span style={{ fontSize: 'var(--fs-footnote)', color: 'var(--label-2)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+            Daily Activity
+          </span>
+          <div className="segmented-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}>
+            {Object.keys(ACTIVITY).map((k) => (
+              <button
+                key={k}
+                type="button"
+                className={`choice-tile ${activity === k ? 'active' : ''}`}
+                onClick={() => { setActivity(k); setSaved(false); }}
+                style={{ padding: '10px 12px' }}
+              >
+                <span className="choice-tile-title" style={{ fontSize: 'var(--fs-subhead)' }}>
+                  {k.charAt(0).toUpperCase() + k.slice(1)}
+                </span>
+                <span className="choice-tile-desc" style={{ fontSize: '11px' }}>
+                  {k === 'sedentary' ? 'Desk, minimal walking' :
+                   k === 'light' ? '1–3 workouts / week' :
+                   k === 'moderate' ? '3–5 workouts / week' : '6–7 workouts / week'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Numeric Metrics */}
+        <span style={{ fontSize: 'var(--fs-footnote)', color: 'var(--label-2)', fontWeight: 600, display: 'block', marginBottom: 8 }}>
+          Body Measurements
+        </span>
+        <div className="fields" style={{ marginBottom: 18 }}>
           <label>
             Age
-            <input name="age" type="number" min="18" max="100" required defaultValue={p.age} />
+            <input name="age" type="number" min="18" max="100" required defaultValue={p.age} placeholder="25" />
           </label>
           <label>
             Height ({units.height})
-            <input name="height" type="number" step="0.1" min={units.height === 'in' ? 47 : 120} max={units.height === 'in' ? 91 : 230} required defaultValue={p.heightCm ? r1(heightFromCm(p.heightCm, units.height)) : ''} />
+            <input name="height" type="number" step="0.1" min={units.height === 'in' ? 47 : 120} max={units.height === 'in' ? 91 : 230} required defaultValue={p.heightCm ? r1(heightFromCm(p.heightCm, units.height)) : ''} placeholder={`in ${units.height}`} />
           </label>
           <label>
             Weight ({units.weight})
-            <input name="weight" type="number" min={wMin} max={wMax} step="0.1" required defaultValue={p.weightKg ? r1(weightFromKg(p.weightKg, units.weight)) : ''} />
-          </label>
-          <label>
-            Activity
-            <select name="activity" defaultValue={p.activity || 'light'}>
-              {Object.keys(ACTIVITY).map((k) => (
-                <option key={k} value={k}>
-                  {ACTIVITY_LABEL[k]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Goal
-            <select name="goal" defaultValue={p.goal || 'hold'}>
-              {Object.keys(GOAL).map((k) => (
-                <option key={k} value={k}>
-                  {GOAL_LABEL[k]}
-                </option>
-              ))}
-            </select>
+            <input name="weight" type="number" min={wMin} max={wMax} step="0.1" required defaultValue={p.weightKg ? r1(weightFromKg(p.weightKg, units.weight)) : ''} placeholder={`in ${units.weight}`} />
           </label>
           {modules.weight && (
             <label>
-              Goal weight ({units.weight}, optional)
-              <input name="goalWeight" type="number" min={wMin} max={wMax} step="0.1" defaultValue={p.goalWeightKg ? r1(weightFromKg(p.goalWeightKg, units.weight)) : ''} />
+              Goal weight ({units.weight})
+              <input name="goalWeight" type="number" min={wMin} max={wMax} step="0.1" defaultValue={p.goalWeightKg ? r1(weightFromKg(p.goalWeightKg, units.weight)) : ''} placeholder="Optional" />
             </label>
           )}
         </div>
-        <button>{saved ? 'Saved ✓' : 'Save'}</button>
+
+        <button className="btn primary" style={{ width: '100%' }}>
+          {saved ? 'Saved ✓' : 'Save Profile'}
+        </button>
       </form>
 
       {t && (
@@ -165,22 +228,52 @@ export function LookPage() {
   const set = (patch) => useStore.getState().setSettings('look', { ...look, ...patch })
   return (
     <section className="card">
-      <Segmented label="Theme" value={look.theme} options={[['system', 'System'], ['light', 'Light'], ['dark', 'Dark']]} onChange={(theme) => set({ theme })} />
-      <div className="setting" style={{ marginTop: 12 }}>
-        <span style={{ fontWeight: 600 }}>Accent colour</span>
-        <div className="swatches" role="radiogroup" aria-label="Accent colour">
-          {PALETTE.map((a) => (
+      <div style={{ marginBottom: 16 }}>
+        <span style={{ fontSize: 'var(--fs-footnote)', color: 'var(--label-2)', fontWeight: 600, display: 'block', marginBottom: 8 }}>
+          Theme
+        </span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {[
+            ['system', 'System', 'gear'],
+            ['light', 'Light', 'sun'],
+            ['dark', 'Dark', 'moon'],
+          ].map(([val, label, icon]) => (
             <button
-              key={a}
+              key={val}
               type="button"
-              role="radio"
-              aria-checked={look.accent === a || (look.accent === 'green' && a === 'lime') || (look.accent === 'blue' && a === 'sky') || (look.accent === 'purple' && a === 'violet')}
-              aria-label={a}
-              className={`swatch ${a}`}
-              style={{ backgroundColor: PALETTE_COLORS[a] }}
-              onClick={() => set({ accent: a })}
-            />
+              className={`choice-tile ${look.theme === val ? 'active' : ''}`}
+              style={{ alignItems: 'center', textAlign: 'center', padding: '12px 6px' }}
+              onClick={() => set({ theme: val })}
+            >
+              <span className="choice-tile-icon"><Icon name={icon} /></span>
+              <span className="choice-tile-title">{label}</span>
+            </button>
           ))}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <span style={{ fontSize: 'var(--fs-footnote)', color: 'var(--label-2)', fontWeight: 600, display: 'block', marginBottom: 8 }}>
+          Accent Colour
+        </span>
+        <div className="swatches" role="radiogroup" aria-label="Accent colour">
+          {PALETTE.map((a) => {
+            const isChecked = look.accent === a || (look.accent === 'green' && a === 'lime') || (look.accent === 'blue' && a === 'sky') || (look.accent === 'purple' && a === 'violet')
+            return (
+              <button
+                key={a}
+                type="button"
+                role="radio"
+                aria-checked={isChecked}
+                aria-label={a}
+                className={`swatch ${a}`}
+                style={{ backgroundColor: PALETTE_COLORS[a] }}
+                onClick={() => set({ accent: a })}
+              >
+                {isChecked && <Icon name="check" style={{ fontSize: 16, strokeWidth: 2.5 }} />}
+              </button>
+            )
+          })}
         </div>
       </div>
     </section>

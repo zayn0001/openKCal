@@ -59,7 +59,7 @@ export default function DishBuilder({ dish, start, onClose, onSaved }) {
               onChange={(e) => setName(e.target.value)}
               required
               maxLength="80"
-              placeholder="Rajma chawal, mum’s dal…"
+              placeholder="Chicken burrito bowl, Greek salad with feta…"
               className="field"
               style={{ width: '180px', textAlign: 'right' }}
             />

@@ -18,25 +18,25 @@ function getLocalAdvice(prompt, eaten, remaining) {
   const q = prompt.toLowerCase()
   if (q.includes('dinner') || q.includes('remaining') || q.includes('eat')) {
     return `Based on your diary today, you have approximately ${Math.max(0, remaining)} kcal left. Here are 3 balanced meal options:
-1. **Paneer Bhurji & Multigrain Roti**: 100g low-fat paneer with capsicum and 2 small rotis (~350 kcal, 22g protein).
-2. **Moong Dal Khichdi & Curd**: 1 medium bowl khichdi with 100g low-fat curd and cucumber salad (~320 kcal, 14g protein).
-3. **Grilled Chicken / Tofu Salad**: 150g grilled breast or baked tofu with lemon-coriander dressing (~280 kcal, 32g protein).`
+1. **Grilled Chicken & Roasted Sweet Potato**: 150g chicken breast with herbs, baked sweet potato, and steamed greens (~360 kcal, 38g protein).
+2. **Salmon & Quinoa Salad Bowl**: 120g grilled salmon with fluffy quinoa, baby spinach, and olive oil dressing (~390 kcal, 30g protein).
+3. **Tofu / Egg Scramble with Whole-Grain Toast**: 2 eggs or 150g firm tofu with mushrooms, spinach, and a slice of sourdough (~310 kcal, 22g protein).`
   }
-  if (q.includes('protein') || q.includes('vegetarian')) {
-    return `Top Indian vegetarian protein sources per 100g:
-• **Soya Chunks**: 52g protein (highest plant protein ratio)
-• **Low-Fat Paneer**: 18-20g protein
-• **Sprouted Moong / Kala Chana**: 9-12g protein + high fiber
-• **Greek Yogurt / Hung Curd**: 10g protein
-• **Lentils / Dals (Cooked)**: 8-9g protein per bowl
-• **Whey Isolate / Plant Blend**: 24-27g protein per scoop`
+  if (q.includes('protein') || q.includes('sources') || q.includes('vegetarian')) {
+    return `Top lean protein sources per 100g:
+• **Chicken Breast / Turkey**: 31g protein (lean & high biological value)
+• **Tuna / Salmon / White Fish**: 24-26g protein + omega-3 fatty acids
+• **Greek Yogurt / Cottage Cheese**: 11-14g protein (rich in casein)
+• **Eggs & Egg Whites**: 13g protein
+• **Tofu / Tempeh / Edamame**: 12-19g plant protein
+• **Whey Isolate / Plant Protein**: 24-27g protein per scoop`
   }
-  if (q.includes('swap') || q.includes('naan') || q.includes('rice')) {
-    return `Smart Indian food swaps:
-• **Butter Naan (320 kcal, high GI)** ➔ **Phulka / Roti with no ghee (90 kcal, whole grain)**
-• **White Basmati Rice** ➔ **Brown Rice, Quinoa or Cauliflower-Rice mix**
-• **Gulab Jamun (180 kcal/pc)** ➔ **Warm spiced apple slices with cinnamon**
-• **Potato Samosa (260 kcal)** ➔ **Air-fried paneer or vegetable tikki (110 kcal)**`
+  if (q.includes('swap') || q.includes('snack') || q.includes('rice') || q.includes('carbs')) {
+    return `Smart nutritional swaps:
+• **Refined White Bread / Bagels** ➔ **100% Whole-Grain, Sourdough, or Sprouted Grain Bread**
+• **Sugary Soda / Juices** ➔ **Sparkling water with lemon & fresh mint**
+• **Deep Fried Potato Chips** ➔ **Air-popped popcorn or roasted chickpeas**
+• **Ice Cream (280 kcal)** ➔ **Frozen berries blended with high-protein Greek yogurt (140 kcal)**`
   }
   return `Great question! Prioritize hitting 1.6–2.0g protein per kg of bodyweight, drink at least 2.5–3 liters of water, and keep fiber above 25g daily. Let me know if you want recipe ideas or macro adjustments for any specific dish!`
 }

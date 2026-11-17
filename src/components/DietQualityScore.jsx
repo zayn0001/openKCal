@@ -11,10 +11,10 @@ export function calculateDietScore(totals, goal) {
     tips.push('Excellent protein intake to support muscle recovery and satiety.')
   } else if (proteinRatio >= 0.6) {
     score += 1.2
-    tips.push('Good protein, but aim to hit your target with paneer, lentils, or eggs.')
+    tips.push('Good protein, but aim to hit your target with chicken, fish, eggs, lentils, or tofu.')
   } else {
     score -= 1.0
-    tips.push('Low protein intake today. Try adding dals, sprouts, tofu, or whey.')
+    tips.push('Low protein intake today. Try adding eggs, Greek yogurt, chicken, tofu, or protein shakes.')
   }
 
   // Fiber check (target ~25-30g)
@@ -33,7 +33,7 @@ export function calculateDietScore(totals, goal) {
   const satFat = totals.satFat || 0
   if (satFat > 28) {
     score -= 1.5
-    tips.push('Saturated fats are high. Reduce deep fried foods and heavy ghee.')
+    tips.push('Saturated fats are high. Reduce deep fried foods and heavy butter or oils.')
   } else if (satFat > 0 && satFat <= 20) {
     score += 0.5
   }

@@ -76,25 +76,35 @@ export function AiPage() {
           Logging meals by voice or text, photo logging and the weekly review run on <strong>your own</strong> AI provider account: you bring the key, and your usage is billed to you, not to
           whoever runs this server. The key is stored encrypted on the server and never shown again.
         </p>
-        <fieldset className="choice">
-          <legend>Provider</legend>
-          {Object.entries(cfg.providers).map(([id, p]) => (
-            <label key={id}>
-              <input
-                type="radio"
-                name="provider"
-                checked={provider === id}
-                onChange={() => {
+        <div style={{ margin: '16px 0' }}>
+          <span style={{ fontSize: 'var(--fs-footnote)', color: 'var(--label-2)', fontWeight: 600, display: 'block', marginBottom: 8 }}>
+            AI Provider
+          </span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+            {Object.entries(cfg.providers).map(([id, p]) => (
+              <button
+                key={id}
+                type="button"
+                className={`choice-tile ${provider === id ? 'active' : ''}`}
+                onClick={() => {
                   setProvider(id)
                   setModels(null)
                   setModel(id === cfg.provider ? cfg.model || '' : p.model || '')
                   setConsent(id === cfg.provider && cfg.consented)
                 }}
-              />{' '}
-              {p.label} {cfg.hasKey[id] && <small>· key saved</small>}
-            </label>
-          ))}
-        </fieldset>
+              >
+                <span className="choice-tile-title">{p.label}</span>
+                <span className="choice-tile-desc">
+                  {cfg.hasKey[id] ? (
+                    <span style={{ color: 'var(--green)', fontWeight: 600 }}>✓ Key saved</span>
+                  ) : (
+                    'Not configured'
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {provider === 'compatible' && (
           <>

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Icon from './Icon'
 import { useStore } from '../store'
 import { useUI } from '../store/useUI'
@@ -12,10 +13,106 @@ export const EXERCISE_TYPES = [
   { id: 'yoga', name: 'Yoga / Mobility', met: 3.0, icon: 'heart' },
 ]
 
+function ExerciseModalForm({ date, weightKg, onClose }) {
+  const [typeId, setTypeId] = useState(EXERCISE_TYPES[0].id)
+  const [minutes, setMinutes] = useState(30)
+  const selectedType = EXERCISE_TYPES.find((x) => x.id === typeId) || EXERCISE_TYPES[0]
+  const [kcal, setKcal] = useState(Math.round(selectedType.met * weightKg * (30 / 60)))
+  const { addExercise } = useStore.getState()
+
+  const handleSelectType = (t) => {
+    setTypeId(t.id)
+    setKcal(Math.round(t.met * weightKg * (minutes / 60)))
+  }
+
+  const handleMinutesChange = (m) => {
+    const minVal = +m || 0
+    setMinutes(minVal)
+    setKcal(Math.round(selectedType.met * weightKg * (minVal / 60)))
+  }
+
+  return (
+    <form
+      className="exercise-form"
+      onSubmit={(e) => {
+        e.preventDefault()
+        addExercise(date, {
+          id: crypto.randomUUID(),
+          name: selectedType.name,
+          type: selectedType.id,
+          minutes: +minutes,
+          kcal: +kcal,
+        })
+        onClose()
+      }}
+    >
+      <h3>Log Workout & Activity</h3>
+
+      <div className="sect-b">
+        <div className="lrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8, padding: '12px 14px' }}>
+          <span className="lrow-t" style={{ fontSize: 'var(--fs-caption)', color: 'var(--label-2)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Select Activity
+          </span>
+          <div className="chips" style={{ margin: 0, padding: 0 }}>
+            {EXERCISE_TYPES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`chip ${typeId === t.id ? 'on' : ''}`}
+                onClick={() => handleSelectType(t)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <Icon name={t.icon} /> {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="lrow">
+          <span className="lrow-m">
+            <span className="lrow-t">Duration</span>
+            <span className="lrow-s">Minutes active</span>
+          </span>
+          <input
+            type="number"
+            min="1"
+            max="300"
+            value={minutes}
+            className="num"
+            style={{ width: '80px', textAlign: 'right' }}
+            onChange={(e) => handleMinutesChange(e.target.value)}
+          />
+        </div>
+
+        <div className="lrow">
+          <span className="lrow-m">
+            <span className="lrow-t">Calories Burned</span>
+            <span className="lrow-s">Estimated kcal</span>
+          </span>
+          <input
+            type="number"
+            min="1"
+            value={kcal}
+            className="num"
+            style={{ width: '80px', textAlign: 'right' }}
+            onChange={(e) => setKcal(+e.target.value || 0)}
+          />
+        </div>
+      </div>
+
+      <div style={{ marginTop: '16px' }}>
+        <button className="btn primary" type="submit">
+          Log Exercise
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export default function ExerciseTracker({ date }) {
   const exercises = useStore((s) => s.exercises?.[date]) || []
   const weightKg = useStore((s) => s.profile?.weightKg) || 70
-  const { addExercise, removeExercise } = useStore.getState()
+  const { removeExercise } = useStore.getState()
   const { openSheet, toast } = useUI.getState()
 
   const totalBurned = exercises.reduce((acc, x) => acc + (x.kcal || x.caloriesBurned || 0), 0)
@@ -46,99 +143,7 @@ export default function ExerciseTracker({ date }) {
   }
 
   const openLogSheet = () => {
-    openSheet((close) => {
-      let selectedType = EXERCISE_TYPES[0]
-      let minutes = 30
-      let customKcal = Math.round(selectedType.met * weightKg * (minutes / 60))
-
-      return (
-        <form
-          className="exercise-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            addExercise(date, {
-              id: crypto.randomUUID(),
-              name: selectedType.name,
-              type: selectedType.id,
-              minutes: +minutes,
-              kcal: +customKcal,
-            })
-            close()
-          }}
-        >
-          <h3>Log Workout & Activity</h3>
-
-          <div className="sect-b">
-            <div className="lrow">
-              <span className="lrow-m">
-                <span className="lrow-t">Activity</span>
-              </span>
-              <select
-                className="activity-select"
-                defaultValue={selectedType.id}
-                onChange={(e) => {
-                  selectedType = EXERCISE_TYPES.find((x) => x.id === e.target.value) || EXERCISE_TYPES[0]
-                  customKcal = Math.round(selectedType.met * weightKg * (minutes / 60))
-                  const kcalInput = document.getElementById('ex-kcal-input')
-                  if (kcalInput) kcalInput.value = customKcal
-                }}
-              >
-                {EXERCISE_TYPES.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="lrow">
-              <span className="lrow-m">
-                <span className="lrow-t">Duration</span>
-                <span className="lrow-s">Minutes active</span>
-              </span>
-              <input
-                type="number"
-                min="1"
-                max="300"
-                defaultValue={minutes}
-                className="num"
-                style={{ width: '80px', textAlign: 'right' }}
-                onChange={(e) => {
-                  minutes = +e.target.value || 0
-                  customKcal = Math.round(selectedType.met * weightKg * (minutes / 60))
-                  const kcalInput = document.getElementById('ex-kcal-input')
-                  if (kcalInput) kcalInput.value = customKcal
-                }}
-              />
-            </div>
-
-            <div className="lrow">
-              <span className="lrow-m">
-                <span className="lrow-t">Calories Burned</span>
-                <span className="lrow-s">Estimated kcal</span>
-              </span>
-              <input
-                id="ex-kcal-input"
-                type="number"
-                min="1"
-                defaultValue={customKcal}
-                className="num"
-                style={{ width: '80px', textAlign: 'right' }}
-                onChange={(e) => {
-                  customKcal = +e.target.value || 0
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ marginTop: '16px' }}>
-            <button className="btn primary" type="submit">
-              Log Exercise
-            </button>
-          </div>
-        </form>
-      )
-    })
+    openSheet((close) => <ExerciseModalForm date={date} weightKg={weightKg} onClose={close} />)
   }
 
   return (

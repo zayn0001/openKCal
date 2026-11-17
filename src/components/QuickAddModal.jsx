@@ -61,21 +61,22 @@ export default function QuickAddModal({ date, defaultMeal = 'Lunch', onClose }) 
           />
         </div>
 
-        <div className="lrow">
-          <span className="lrow-m">
-            <span className="lrow-t">Meal Slot</span>
+        <div className="lrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8, padding: '10px 14px' }}>
+          <span className="lrow-t" style={{ fontSize: 'var(--fs-caption)', color: 'var(--label-2)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Meal Slot
           </span>
-          <select
-            value={meal}
-            onChange={(e) => setMeal(e.target.value)}
-            className="activity-select"
-          >
+          <div className="chips" style={{ margin: 0, padding: 0 }}>
             {MEALS.map((m) => (
-              <option key={m} value={m}>
+              <button
+                key={m}
+                type="button"
+                className={`chip ${meal === m ? 'on' : ''}`}
+                onClick={() => setMeal(m)}
+              >
                 {m}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
         </div>
 
         <div className="lrow">

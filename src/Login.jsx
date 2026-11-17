@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from './components/Icon'
 import { call, passkeyLogin, passkeysSupported, registerPasskey } from './api'
 import { signedIn, useSync } from './sync'
 
@@ -189,15 +190,31 @@ function SignupSecret({ passkeys }) {
     <>
       <input type="hidden" name="how" value={how} />
       {passkeys && (
-        <fieldset className="choice">
-          <legend>Sign in with</legend>
-          <label>
-            <input type="radio" checked={how === 'passkey'} onChange={() => setHow('passkey')} /> A passkey (Face ID, fingerprint, security key)
-          </label>
-          <label>
-            <input type="radio" checked={how === 'password'} onChange={() => setHow('password')} /> A password
-          </label>
-        </fieldset>
+        <div style={{ margin: '14px 0' }}>
+          <span style={{ fontSize: 'var(--fs-footnote)', color: 'var(--label-2)', fontWeight: 500, display: 'block', marginBottom: 8 }}>
+            Sign in method
+          </span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <button
+              type="button"
+              className={`choice-tile ${how === 'passkey' ? 'active' : ''}`}
+              onClick={() => setHow('passkey')}
+            >
+              <span className="choice-tile-icon"><Icon name="key" /></span>
+              <span className="choice-tile-title">Passkey</span>
+              <span className="choice-tile-desc">Face ID or PIN</span>
+            </button>
+            <button
+              type="button"
+              className={`choice-tile ${how === 'password' ? 'active' : ''}`}
+              onClick={() => setHow('password')}
+            >
+              <span className="choice-tile-icon"><Icon name="lock" /></span>
+              <span className="choice-tile-title">Password</span>
+              <span className="choice-tile-desc">Secret phrase</span>
+            </button>
+          </div>
+        </div>
       )}
       {how === 'password' && (
         <div className="fields">

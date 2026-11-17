@@ -52,7 +52,7 @@ function FoodForm({ food, onClose }) {
               required
               maxLength="80"
               defaultValue={food?.name}
-              placeholder="e.g. Paneer Tikka"
+              placeholder="e.g. Grilled Chicken Bowl"
               className="field"
               style={{ width: '180px', textAlign: 'right' }}
             />
@@ -90,7 +90,7 @@ function FoodForm({ food, onClose }) {
             </span>
             <input
               name="portionName"
-              placeholder="bowl, roti, piece"
+              placeholder="bowl, slice, portion, cup"
               maxLength="30"
               defaultValue={portion?.name}
               className="field"
@@ -147,7 +147,7 @@ export default function Foods() {
   const myFoods = foods.filter((f) => f.kind !== 'dish')
   const allCommunity = [...communityDishes, ...communityFoods]
 
-  const filterChips = ['All', 'Community', 'All Recipes', 'My Dishes', 'My Foods', 'High Protein', 'Indian Staples', 'Low Calorie']
+  const filterChips = ['All', 'Community', 'All Recipes', 'My Dishes', 'My Foods', 'High Protein', 'Daily Staples', 'Low Calorie']
 
   // Filtered food list preview
   const getFilteredList = () => {
@@ -157,8 +157,8 @@ export default function Foods() {
     if (filter === 'My Foods') return myFoods
     if (filter === 'High Protein') return all.filter((f) => (f.per100?.protein || 0) >= 15).slice(0, 40)
     if (filter === 'Low Calorie') return all.filter((f) => (f.per100?.kcal || 0) <= 80).slice(0, 40)
-    if (filter === 'Indian Staples') {
-      const staples = ['roti', 'dal', 'rice', 'paneer', 'dosa', 'idli', 'chapati', 'paratha', 'curd', 'khichdi', 'poha']
+    if (filter === 'Daily Staples') {
+      const staples = ['chicken', 'rice', 'eggs', 'salmon', 'oats', 'salad', 'beef', 'tofu', 'pasta', 'avocado', 'yogurt']
       return all.filter((f) => staples.some((st) => f.name.toLowerCase().includes(st))).slice(0, 50)
     }
     return [...myDishes, ...communityDishes, ...myFoods, ...communityFoods].slice(0, 40)

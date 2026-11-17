@@ -42,17 +42,16 @@ export default function LineChart({
   const single = points.length === 1
   const pts = single ? [{ ...points[0], x: 0 }, { ...points[0], x: 1 }] : points
 
+  // Axis fits the data only; the goal line is drawn when it falls inside that range.
   const ys = pts.map((p) => p.y)
-  if (goal != null && isFinite(goal)) ys.push(goal)
   let ymin = Math.min(...ys)
   let ymax = Math.max(...ys)
   if (ymin === ymax) {
     ymin -= 1
     ymax += 1
   }
-  const pad = (ymax - ymin) * 0.12
-  ymin -= pad
-  ymax += pad
+  const showGoal = goal != null && isFinite(goal) && goal >= ymin && goal <= ymax
+  const fmt = (v) => (ymax - ymin < 10 ? v.toFixed(1) : Math.round(v))
 
   const X = (i) => P.l + (i / Math.max(1, pts.length - 1)) * (W - P.l - P.r)
   const Y = (y) => P.t + (1 - (y - ymin) / (ymax - ymin)) * (h - P.t - P.b)
@@ -97,16 +96,19 @@ export default function LineChart({
             <line x1={P.l} y1={P.t + (h - P.t - P.b) / 2} x2={W - P.r} y2={P.t + (h - P.t - P.b) / 2} className="gridline" />
             <line x1={P.l} y1={h - P.b} x2={W - P.r} y2={h - P.b} className="gridline" />
             <text x={P.l - 4} y={P.t + 4} textAnchor="end" className="axis-lbl">
-              {Math.round(ymax - pad)}
+              {fmt(ymax)}
             </text>
-            <text x={P.l - 4} y={h - P.b} textAnchor="end" className="axis-lbl">
-              {Math.round(ymin + pad)}
+            <text x={P.l - 4} y={P.t + (h - P.t - P.b) / 2 + 4} textAnchor="end" className="axis-lbl">
+              {fmt((ymax + ymin) / 2)}
+            </text>
+            <text x={P.l - 4} y={h - P.b + 4} textAnchor="end" className="axis-lbl">
+              {fmt(ymin)}
             </text>
           </g>
         )}
 
         {/* Goal line */}
-        {goal != null && isFinite(goal) && (
+        {showGoal && (
           <line
             x1={P.l}
             x2={W - P.r}

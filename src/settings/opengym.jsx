@@ -22,7 +22,11 @@ export function OpenGymPage() {
 
   // Connection form state
   const [authMode, setAuthMode] = useState('code') // 'code' | 'token'
-  const [serverUrl, setServerUrl] = useState('http://localhost:8080')
+  const [serverUrl, setServerUrl] = useState(() => {
+    const saved = openGymRemote?.serverUrl
+    if (typeof saved === 'string' && saved && !saved.includes('[object')) return saved
+    return 'http://localhost:8080'
+  })
   const [pairingCode, setPairingCode] = useState('')
   const [bearerToken, setBearerToken] = useState('')
 
@@ -310,22 +314,30 @@ export function OpenGymPage() {
             </div>
 
             <form onSubmit={authMode === 'code' ? handleConnectCode : handleConnectToken}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <TextField
                   label="openGym Server Address"
+                  type="url"
                   placeholder="http://localhost:8080 or https://gym.example.com"
                   value={serverUrl}
-                  onChange={setServerUrl}
+                  onChange={(e) => setServerUrl(e.target.value)}
+                  required
                 />
 
                 {authMode === 'code' ? (
                   <div>
                     <TextField
                       label="6-Character Pairing Code"
+                      type="text"
                       placeholder="e.g. 7KX92M"
                       value={pairingCode}
-                      onChange={(v) => setPairingCode(v.toUpperCase())}
-                      style={{ letterSpacing: '0.15em', fontWeight: 700 }}
+                      onChange={(e) => setPairingCode(e.target.value.toUpperCase().slice(0, 10))}
+                      style={{ letterSpacing: '0.15em', fontWeight: 700, textTransform: 'uppercase' }}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                      required
                     />
                     <p className="muted" style={{ fontSize: 'var(--fs-caption)', margin: '6px 0 0' }}>
                       In openGym: Go to <strong>Settings → Pair the mobile app</strong>, confirm your identity, and enter the code shown on screen.
@@ -335,9 +347,12 @@ export function OpenGymPage() {
                   <div>
                     <TextField
                       label="openGym Bearer Token"
+                      type="password"
                       placeholder="Paste your openGym token..."
                       value={bearerToken}
-                      onChange={setBearerToken}
+                      onChange={(e) => setBearerToken(e.target.value.trim())}
+                      autoComplete="off"
+                      required
                     />
                     <p className="muted" style={{ fontSize: 'var(--fs-caption)', margin: '6px 0 0' }}>
                       Paste a valid Bearer token generated for your openGym profile.

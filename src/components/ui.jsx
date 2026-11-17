@@ -14,8 +14,29 @@ export function Button({ variant = 'plain', size, icon, trailingIcon, children, 
 }
 
 /* ============================ Text & Inputs ============================ */
-export const TextField = forwardRef(function TextField({ className = '', ...rest }, ref) {
-  return <input ref={ref} className={'field ' + className} {...rest} />
+export const TextField = forwardRef(function TextField({ label, className = '', onChange, value, ...rest }, ref) {
+  const safeVal = typeof value === 'object' && value !== null ? '' : (value ?? '')
+  const input = (
+    <input
+      ref={ref}
+      className={'field ' + className}
+      value={safeVal}
+      onChange={(e) => {
+        if (!onChange) return
+        onChange(e)
+      }}
+      {...rest}
+    />
+  )
+  if (!label) return input
+  return (
+    <label style={{ display: 'block' }}>
+      <span style={{ display: 'block', fontSize: 'var(--fs-caption)', fontWeight: 600, color: 'var(--label)', marginBottom: 6 }}>
+        {label}
+      </span>
+      {input}
+    </label>
+  )
 })
 
 export function TextArea({ className = '', ...rest }) {

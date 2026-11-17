@@ -18,7 +18,8 @@ export const useSync = create(
       server: null, // null: not checked, false: no server here, else { signup, guests, passkeys, push, version }
       error: '',
     }),
-    { name: 'food_sync_v1', partialize: ({ user, guest, rev, dirty }) => ({ user, guest, rev, dirty }) },
+    // server too: opened offline, the app still knows what it last saw
+    { name: 'food_sync_v1', partialize: ({ user, guest, rev, dirty, server }) => ({ user, guest, rev, dirty, server }) },
   ),
 )
 
@@ -128,10 +129,26 @@ export async function resetEverything() {
   } else useStore.getState().reset()
 }
 
-export async function startSync() {
+let offline = false // signed in, but the server did not answer: keep working locally, keep trying
+
+// Asks the server who we are. If it cannot be reached and this device was signed in (or the app
+// has a server address), that is "offline", not "no server": edits stay marked unsynced and go
+// up, merged, once it answers.
+async function connect() {
   const me = await api('GET', '/api/me').catch(() => null)
-  if (typeof me?.body?.server?.signup !== 'string') return useSync.setState({ server: false })
-  useSync.setState({ server: me.body.server, user: me.body.user })
+  if (typeof me?.body?.server?.signup === 'string') {
+    offline = false
+    useSync.setState({ server: me.body.server, user: me.body.user })
+    sync()
+    fetchSharedRecipes().catch(() => {})
+  } else if (useSync.getState().user || serverBase()) {
+    offline = true
+    useSync.setState({ server: useSync.getState().server || { signup: 'closed' }, error: 'Offline. Changes will sync later.' })
+  } else useSync.setState({ server: false })
+}
+
+export async function startSync() {
+  // From the start, so edits made before the server answers are not lost
   useStore.subscribe((s, prev) => {
     if (applying || !KEYS.some((k) => s[k] !== prev[k])) return
     changes++
@@ -139,8 +156,10 @@ export async function startSync() {
     clearTimeout(timer)
     timer = setTimeout(sync, 1500)
   })
-  addEventListener('online', sync)
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && sync())
-  sync()
-  fetchSharedRecipes().catch(() => {})
+  const retry = () => (offline ? connect() : sync())
+  addEventListener('online', retry)
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && retry())
+  // ponytail: fixed 30 s retry; back off if a sleeping server ever minds being asked
+  setInterval(() => (offline || useSync.getState().dirty) && retry(), 30_000)
+  await connect()
 }

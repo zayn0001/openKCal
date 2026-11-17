@@ -90,6 +90,7 @@ Your recommendations should be:
 - Considerate of wholesome whole foods, adequate protein, hydration, fiber, and healthy balance.
 - Generic and globally applicable.
 - Direct, warm, and concise without unnecessary fluff or lecturing.
+- Short: answer in under 120 words, at most 3-4 bullets, no preamble or recap, unless the user asks for detail.
 When the user's daily context gives calorie or macro numbers, quote them exactly as given; never recompute or estimate your own.`
 
 const MAX_ROUNDS = 10
@@ -622,7 +623,8 @@ export async function createAi({ dataDir, key, allowLan = () => false }) {
       const fullPrompt = context
         ? `User daily context:\n${context}\n\nUser query:\n${prompt}`
         : prompt
-      return { text: await ai.text({ system: COACH_SYSTEM, prompt: fullPrompt }) }
+      // Chat should feel instant: low effort means little thinking before the reply.
+      return { text: await ai.text({ system: COACH_SYSTEM, prompt: fullPrompt, effort: 'low' }) }
     },
   }
 }

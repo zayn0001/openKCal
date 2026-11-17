@@ -226,11 +226,8 @@ export default function CoachChat() {
       }
 
       // Smart local fallback advice
-      setTimeout(() => {
-        const reply = getLocalAdvice(text, eaten, remaining, profile)
-        addCoachMessage({ role: 'coach', text: reply })
-        setBusy(false)
-      }, 500)
+      addCoachMessage({ role: 'coach', text: getLocalAdvice(text, eaten, remaining, profile) })
+      setBusy(false)
     } catch {
       addCoachMessage({ role: 'coach', text: getLocalAdvice(text, eaten, remaining, profile) })
       setBusy(false)

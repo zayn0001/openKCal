@@ -203,7 +203,7 @@ export function OpenGymPage() {
               fontSize: 20,
             }}
           >
-            <Icon name="opengym" size={24} />
+            <Icon name="dumbbell" size={24} />
           </div>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: 'var(--fs-title2)', margin: 0, fontWeight: 700 }}>openGym Live Sync</h2>
